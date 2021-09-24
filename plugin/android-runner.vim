@@ -4,7 +4,7 @@ endif
 let g:android_runner_loaded = 1
 
 let g:gradle_bin            = get( g:, 'gradle_bin'           , '' )
-let g:adb_bin               = get( g:, 'adb_bin'              , '' )
+let g:adb_bin               = get( g:, 'adb_bin'              , systemlist('which adb')[0] )
 let g:android_target_device = get( g:, 'android_target_device', '' )
 let g:android_target_app    = get( g:, 'android_target_app'   , '' )
 
