@@ -1,5 +1,3 @@
-let g:gradle_project_root = systemlist( 'dirname ' . g:gradle_bin )[0]
-
 " TODO: cannot process --console plain for some reason
 function! s:createGradleCmd(cmd) abort
     let l:cmd = [

@@ -3,10 +3,19 @@ if exists('android_runner_loaded')
 endif
 let g:android_runner_loaded = 1
 
+" TODO: fzf
+" TODO: get build types from gradle
+" TODO: gradle autocomplete
+" TODO: pidcat
+
 let g:gradle_bin            = get( g:, 'gradle_bin'           , '' )
+let g:gradle_project_root   = systemlist( 'dirname ' . g:gradle_bin )[0]
+
 let g:adb_bin               = get( g:, 'adb_bin'              , systemlist('which adb')[0] )
 let g:android_target_device = get( g:, 'android_target_device', '' )
 let g:android_target_app    = get( g:, 'android_target_app'   , '' )
+let g:android_project_root  = get( g:, 'android_project_root' , '' )
+"systemlist( 'dirname ' . g:gradle_bin )[0]
 
 command! -nargs=1 -complete=customlist,gradle#getTasks       GradleRun          call gradle#run(<f-args>)
 command! -nargs=? -complete=customlist,adb#completeDevices   AdbSelectDevice    call adb#SelectDevice(<f-args>)

@@ -1,15 +1,10 @@
-let g:android_project_root = systemlist( 'dirname ' . g:gradle_bin )[0]
+function! adb#setAndroidProjectRoot( path ) abort
+    if !isdirectory( a:path )
+        echom "This is not a valid directory!"
+        return
+    endif
 
-" Returns device property as string
-function! adb#getProperty(device, property) abort
-  let l:cmd = [
-    \ g:adb_bin,
-    \ '-s',
-    \ a:device,
-    \ 'shell getprop',
-    \ a:property
-    \ ]->join()
-  return systemlist(l:cmd)->join()
+    let g:android_project_root = a:path
 endfunction
 
 let s:android_properties = #{
@@ -22,6 +17,18 @@ let s:android_properties = #{
         \ language     : 'persist.sys.language'    ,
         \ timezone     : 'persist.sys.timezone'    ,
       \}
+
+" Returns device property as string
+function! adb#getProperty(device, property) abort
+  let l:cmd = [
+    \ g:adb_bin,
+    \ '-s',
+    \ a:device,
+    \ 'shell getprop',
+    \ a:property
+    \ ]->join()
+  return systemlist(l:cmd)->join()
+endfunction
 
 function! adb#getDeviceInfo( device, properties = [ 'sdk', 'version', 'model' ] ) abort
     let l:result = #{ device : a:device }
@@ -41,16 +48,20 @@ endfunction
 
 function! adb#SelectDevice( ... ) abort
     if !a:0
-        echom 'Current target device: ' . (empty( g:android_target_device ) ? 'none' : g:android_target_device)
+        echom 'Current target device: ' . ( empty( g:android_target_device ) ? 'none' : g:android_target_device )
     else
-        let g:android_target_device = a:1
+        let g:android_target_device = a:1->split('-')[0]->trim()
     endif
     " TODO: inputlist()
 endfunction
 
 let s:build_type_name = 'distribute'
 
-let s:app_pkg = 'com.microblink.exerunner'
+let g:app_pkg = 'com.microblink.exerunner'
+
+function! adb#setAppPkg( app_pkg ) abort
+    let g:app_pkg = a:app_pkg
+endfunction
 
 function! adb#completeBuildType(...) abort
     return ['debug', 'release', 'distribute']
@@ -60,14 +71,32 @@ function! adb#SelectBuildType( build_type ) abort
     let s:build_type_name = a:build_type
 endfunction
 
-function! s:checkDevice()
-    return empty( g:android_target_device )
+" TODO: rename to indicate bool return value
+function! s:deviceValid( target_device = g:android_target_device )
+    if empty( a:target_device )
+        return v:false
+    endif
+
+    return index( adb#devices(['device'])->map('v:val["device"]'), a:target_device ) != -1
+        " echom printf("Target device '%s' isn't connected!", a:target_device)
+        " let g:android_target_device = ''
+        " return v:false
+    " endif
+
+    return v:true
 endfunction
 
 function! adb#push( apk_name = g:android_target_app ) abort
-    if s:checkDevice()
+    if !s:deviceValid()
         echom printf( "Device '%s' not found!", g:android_target_device )
         return 
+    endif
+
+    if empty( g:android_project_root )
+        echom "Android project root is empty!"
+        " TODO: ask to user if they want to 
+        " set it based on gradle_bin
+        return
     endif
 
     let l:cmd = [
@@ -75,15 +104,15 @@ function! adb#push( apk_name = g:android_target_app ) abort
         \ '-s',
         \ g:android_target_device,
         \ 'push',
-        \ printf( '%s/app/build/outputs/apk/%s/app-%s.apk', g:android_project_root, s:build_type_name, s:build_type_name ),
-        \ '/data/local/tmp/' . s:app_pkg . '.' . a:apk_name,
+        \ printf( '%s/%s/build/outputs/apk/%s/%s-%s.apk', g:android_project_root, a:apk_name, a:apk_name, s:build_type_name, s:build_type_name ),
+        \ '/data/local/tmp/' . g:app_pkg . '.' . a:apk_name,
         \ ]
     call job#run( l:cmd )
 endfunction
 
 "grant_permissions_message = '-g: grant all runtime permissions'
 function! adb#installApp( apk_name = g:android_target_app ) abort
-    if s:checkDevice()
+    if !s:deviceValid()
         echom printf( "Device '%s' not found!", g:android_target_device )
         return 
     endif
@@ -97,7 +126,7 @@ function! adb#installApp( apk_name = g:android_target_app ) abort
         \ 'install',
         \ '-t',
         \ '-r',
-        \ '/data/local/tmp/' . s:app_pkg . '.' . a:apk_name
+        \ '/data/local/tmp/' . g:app_pkg . '.' . a:apk_name
         \ ]
 
     call job#run( l:cmd )
@@ -110,7 +139,7 @@ endfunction
 " benchmark_app_pkg = 'com.microblink.exerunner.' . 'application_build.application_name'
 " activity_class = 'com.microblink.exerunner.RunActivity'
 function! adb#startApp( app_name = g:android_target_app, package_path = 'com.microblink.exerunner', activity_class = 'com.microblink.exerunner.RunActivity' ) abort
-    if s:checkDevice()
+    if !s:deviceValid()
         echom printf( "Device '%s' not found!", g:android_target_device )
         return 
     endif
@@ -134,7 +163,7 @@ function! adb#startApp( app_name = g:android_target_app, package_path = 'com.mic
 endfunction
 
 function! s:getPid( app_name ) abort
-    if s:checkDevice()
+    if !s:deviceValid()
         echom printf( "Device '%s' not found!", g:android_target_device )
         return 
     endif
@@ -145,7 +174,7 @@ function! s:getPid( app_name ) abort
         \ g:android_target_device,
         \ 'shell',
         \ 'pidof',
-        \ s:app_pkg . '.' . a:app_name
+        \ g:app_pkg . '.' . a:app_name
         \ ]->join()
 
     " echom l:cmd
@@ -153,7 +182,7 @@ function! s:getPid( app_name ) abort
 endfunction
 
 function! adb#clearLogcat( app_name = g:android_target_app ) abort
-    if s:checkDevice()
+    if !s:deviceValid()
         echom printf( "Device '%s' not found!", g:android_target_device )
         return 
     endif
@@ -173,7 +202,7 @@ function! adb#clearLogcat( app_name = g:android_target_app ) abort
 endfunction
 
 function! adb#getLogcatOutput( app_name = g:android_target_app ) abort
-    if s:checkDevice()
+    if !s:deviceValid()
         echom printf( "Device '%s' not found!", g:android_target_device )
         return 
     endif
@@ -196,7 +225,7 @@ endfunction
 
 function! adb#completeDevices(...) abort
     " echom adb#devices( ['model'] )
-    return adb#devices( [ 'model' ] )->map( "v:val['device']" )
+    return adb#devices( [ 'brand', 'model' ] )->map( 'printf("%s - %s", v:val["device"], v:val["model"])' )
 endfunction
 
 function! adb#devices( properties = [] ) abort
@@ -216,9 +245,14 @@ function! adb#devices( properties = [] ) abort
 endfunction
 
 function! adb#shazam( app_name = g:android_target_app, package_path = 'com.microblink.exerunner', activity_class = 'com.microblink.exerunner.RunActivity'  ) abort
-    if s:checkDevice()
+    if !s:deviceValid()
         echom printf( "Device '%s' not found!", g:android_target_device )
         return 
+    endif
+
+    if empty( g:android_project_root )
+        echom "Android project root is empty!"
+        return
     endif
 
     " push
@@ -228,7 +262,7 @@ function! adb#shazam( app_name = g:android_target_app, package_path = 'com.micro
         \ g:android_target_device,
         \ 'push',
         \ printf( '%s/app/build/outputs/apk/%s/app-%s.apk', g:android_project_root, s:build_type_name, s:build_type_name ),
-        \ '/data/local/tmp/' . s:app_pkg . '.' . a:app_name,
+        \ '/data/local/tmp/' . g:app_pkg . '.' . a:app_name,
         \ ]
 
     echom systemlist( l:cmd->join() )->join("\n")
@@ -245,7 +279,7 @@ function! adb#shazam( app_name = g:android_target_app, package_path = 'com.micro
         \ 'install',
         \ '-t',
         \ '-r',
-        \ '/data/local/tmp/' . s:app_pkg . '.' . a:app_name
+        \ '/data/local/tmp/' . g:app_pkg . '.' . a:app_name
         \ ]
 
     echom systemlist( l:cmd->join() )->join("\n")
@@ -279,8 +313,12 @@ function! adb#shazam( app_name = g:android_target_app, package_path = 'com.micro
     call adb#getLogcatOutput()
 endfunction
 
-function! adb#shell() abort
-    " bottom term adb -s device shell
+function! adb#shell( target_device = g:android_target_device ) abort
+    if !s:deviceValid( a:target_device )
+        echom printf( "Device '%s' not found!", a:target_device )
+        return 
+    endif
+    execute printf( 'bo term ++close adb -s %s shell', a:target_device )
 endfunction
 
 function! adb#run( cmd ) abort
