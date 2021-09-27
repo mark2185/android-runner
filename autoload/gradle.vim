@@ -1,12 +1,13 @@
+let g:gradle_project_root = systemlist( 'dirname ' . g:gradle_bin )[0]
+
 " TODO: cannot process --console plain for some reason
 function! s:createGradleCmd(cmd) abort
     let l:cmd = [
             \ g:gradle_bin,
             \ '-p',
-            \ g:gradle_project_root,
-            \ a:cmd
+            \ g:gradle_project_root
         \]
-    return l:cmd
+    return l:cmd + a:cmd
 endfunction
 
 "if it starts with [a-z], it's a task
@@ -36,5 +37,5 @@ function! gradle#run( cmd ) abort
         echom printf('Gradle binary %s is not found.', g:gradle_bin )
     endif
 
-    call job#run( s:createGradleCmd( a:cmd ) )
+    call job#run( s:createGradleCmd( a:cmd->split() ) )
 endfunction
