@@ -198,7 +198,7 @@ endfunction
 function! adb#getPidcatOutput( app_name = g:android_target_app )
 endfunction
 
-function! adb#getLogcatOutput( app_name = 'com.microblink.exerunner' . g:android_target_app ) abort
+function! adb#getLogcatOutput( app_name = 'com.microblink.exerunner.' . g:android_target_app ) abort
     if !s:isDeviceValid()
         echom printf( "Device '%s' not found!", g:android_target_device )
         return 

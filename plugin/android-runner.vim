@@ -14,11 +14,10 @@ let g:android_target_device = get( g:, 'android_target_device', '' )
 let g:android_target_app    = get( g:, 'android_target_app'   , '' )
 let g:android_project_root  = get( g:, 'android_project_root' , '' )
 
-let g:gradle_bin            = get( g:, 'gradle_bin'           , '' )
-let g:gradle_project_root   = get( g:, 'gradle_project_root'  , '' ) " systemlist( 'dirname ' . g:gradle_bin )[0]
+let g:gradle_bin            = get( g:, 'gradle_bin'           , g:android_project_root . '/gradlew' )
+let g:gradle_project_root   = get( g:, 'gradle_project_root'  , g:android_project_root )
 
 let g:android_lldb_server_bin = get( g:, 'android_lldb_server_bin', '' )
-"systemlist( 'dirname ' . g:gradle_bin )[0]
 
 command! -nargs=1 -complete=customlist,gradle#getTasks       GradleRun          call gradle#run(<f-args>)
 command! -nargs=? -complete=customlist,adb#completeDevices   AdbSelectDevice    call adb#SelectDevice(<f-args>)

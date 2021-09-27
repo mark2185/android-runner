@@ -17,7 +17,7 @@ Most of the commands take optional arguments, which is most likely `apk_name`.
 If not specified, `g:android_target_app` and `g:target_device` are used.
 
 ```vim
-GradleRun           - runs `gradle` commands from the base folder of `g:gradle_bin`
+GradleRun           - runs `gradle` commands with `g:gradle_project_root` as current working dir
 AdbSelectDevice     - select one of the detected devices as your target
 AdbShell            - spawn shell on the target device
 AdbRun              - run a command on the  target device
@@ -36,16 +36,16 @@ AdbShazam           - push, install, start, logcat
 Variables:
 
 ```vim
-g:gradle_bin            - path to gradlew
-g:gradle_project_root   - dirname of g:gradle_bin
-g:adb_bin               - path to adb, defaults to $(which adb)
 g:android_target_device - ID of the target device
 g:android_target_app    - name of the target app
 g:android_project_root  - path to the android project root
+g:gradle_bin            - path to gradlew
+g:gradle_project_root   - dirname of g:gradle_bin
+g:adb_bin               - path to adb, defaults to $(which adb)
 ```
 
 ## Bonus
 
-To stop a job press `<C-C>` in the job's buffer.
+To stop a job press `<C-c>` in the job's buffer.
 
 To clear the logcat press `<leader>c` in the job's buffer.

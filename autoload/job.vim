@@ -63,7 +63,10 @@ function! s:createJobBuf() abort
 endfunction
 
 function! s:vimClose(channel) abort
-    let l:ret_code = job_info(s:android_job['job'])['exitval']
+    if !has_key( s:android_job, 'job') 
+        return
+    endif
+    let l:ret_code = get( job_info( s:android_job[ 'job' ] ), 'exitval', -1 )
     if l:ret_code == 0
         echon "Success!\n" . s:android_job['cmd']
     else
@@ -87,7 +90,5 @@ function! job#run( cmd ) abort
                 \ } )
 
    let s:android_job['job'] = l:job
-    if !has('nvim')
-       let s:android_job['channel'] = job_getchannel(l:job)
-    endif
+   let s:android_job['channel'] = job_getchannel(l:job)
 endfunction
