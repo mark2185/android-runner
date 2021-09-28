@@ -1,94 +1,120 @@
-let s:android_buf = 'android_execute'
-let s:android_job = {}
+vim9script
 
-function! s:createQuickFix() abort
-    " just to be sure all messages were processed
+const job_bufname = 'android_execute'
+
+var android_job = {}
+var job_bufid   = -1
+
+def CreateJobBuffer(): number
+    if job_bufid != -1
+        throw "Buffer already exists!"
+    endif
+
+    job_bufid = bufadd( job_bufname )
+    call setbufvar( job_bufid, "&modifiable", 0 )
+    call setbufvar( job_bufid, "&hidden", 0 )
+    call setbufvar( job_bufid, "&buftype", 'nofile' )
+    call setbufvar( job_bufid, "&swapfile", 0 )
+    call setbufvar( job_bufid, "&wrap", 0 )
+    call setbufvar( job_bufid, "&modifiable", 0 )
+
+    call bufload( job_bufname )
+
+    silent exec 'keepalt below split ' .. job_bufname
+    nmap <buffer> <C-c> call job#stop()<CR>
+    nmap <buffer> <C-r> call job#clearBuffer()<CR>
+
+    return job_bufid
+enddef
+
+def CloseJobBuffer(): void
+    if job_bufid == -1
+        return
+    endif
+
+    exec 'bwipeout ' .. job_bufid
+    job_bufid = -1
+enddef
+
+def CreateQuickFix(): void
+    if job_bufid == -1
+        return
+    endif
+
+    # just to be sure all messages were processed
     sleep 100m
-    let l:bufnr = bufnr(s:android_buf)
-    if l:bufnr == -1
+
+    silent execute 'cgetbuffer ' .. job_bufid
+    silent call setqflist( [], 'a', { 'title': android_job[ 'cmd' ]->join() } )
+enddef
+
+def CloseCallback( channel: number ): void
+    if !has_key( android_job, 'job') 
         return
     endif
 
-    silent execute 'cgetbuffer ' . l:bufnr
-    silent call setqflist( [], 'a', { 'title' : s:android_job[ 'cmd' ] } )
-
-    " Remove android job
-    let s:android_job = {}
-    call s:closeBuffer()
-endfunction
-
-function! s:closeBuffer() abort
-    let l:bufnr = bufnr(s:android_buf)
-    if l:bufnr == -1
-        return
-    endif
-
-    let l:winnr = bufwinnr(l:bufnr)
-    if l:winnr != -1
-        exec l:winnr.'wincmd c'
-    endif
-
-    silent exec 'bwipeout ' . l:bufnr
-endfunction
-
-function! job#stop() abort
-    if empty(s:android_job)
-        call s:closeBuffer()
-        return
-    endif
-    let l:job = s:android_job['job']
-    call job_stop(l:job)
-    call s:createQuickFix()
-    copen
-    echom 'Job is cancelled!'
-endfunction
-
-function! job#clearBuffer() abort
-    call setbufvar( bufnr( s:android_buf ), "&modifiable", 1 )
-    %delete _
-    call setbufvar( bufnr( s:android_buf ), "&modifiable", 0 )
-endfunction
-
-function! s:createJobBuf() abort
-    call s:closeBuffer()
-    silent execute 'keepalt below 10split ' . s:android_buf
-
-    setlocal bufhidden=hide buftype=nofile buflisted nolist
-    setlocal noswapfile nowrap nomodifiable
-
-    nmap <buffer> <C-c> :call job#stop()<CR>
-    nmap <buffer> <leader>c :call job#clearBuffer()<CR>
-
-    return bufnr(s:android_buf)
-endfunction
-
-function! s:vimClose(channel) abort
-    if !has_key( s:android_job, 'job') 
-        return
-    endif
-    let l:ret_code = get( job_info( s:android_job[ 'job' ] ), 'exitval', -1 )
-    if l:ret_code == 0
-        echon "Success!\n" . s:android_job['cmd']
+    if 0 == job_info( s:android_job[ 'job' ] )[ 'exitval' ]
+        echon "Success!\n" .. android_job[ 'cmd' ]
     else
-        echon "Failure!\n" . s:android_job['cmd']
+        echon "Failure!\n" .. android_job[ 'cmd' ]
     endif
 
-    call s:createQuickFix()
-    silent copen
-endfunction
+    call CreateQuickFix()
+    call CloseJobBuffer()
 
-function! job#run( cmd ) abort
-    silent cclose
-    let l:outbufnr = s:createJobBuf()
-    let s:android_job[ 'cmd' ] = type( a:cmd ) == v:t_list ? a:cmd->join() : a:cmd
-    let l:job = job_start( a:cmd, {
-                \ 'close_cb': function( 's:vimClose' ),
-                \ 'out_io' : 'buffer', 'out_buf' : l:outbufnr,
-                \ 'err_io' : 'buffer', 'err_buf' : l:outbufnr,
-                \ 'out_modifiable' : 0,
-                \ 'err_modifiable' : 0,
-                \ } )
+    # Remove android job
+    android_job = {}
 
-   let s:android_job['job'] = l:job
-   let s:android_job['channel'] = job_getchannel(l:job)
-endfunction
+    copen
+enddef
+
+# TODO: does stopping a job call its close callback?
+def job#stop(): void
+    if empty( android_job )
+        # for fixing an undesired state in which there is no job running,
+        # but a buffer still exists
+        call CloseJobBuffer()
+        return
+    endif
+
+    android_job[ 'job' ]->job_stop()
+
+    call CreateQuickFix()
+    call CloseJobBuffer()
+
+    # Remove android job
+    android_job = {}
+
+    copen
+
+    echom 'Job is cancelled!'
+enddef
+
+
+export def job#clearBuffer(): void
+    call setbufvar( job_bufid, "&modifiable", 1 )
+    %delete _
+    call setbufvar( job_bufid, "&modifiable", 0 )
+enddef
+
+export def job#run( cmd: list< string > ): void
+    if job_bufid != -1
+        echom 'Job already running!'
+    endif
+
+    cclose
+
+    call CloseJobBuffer()
+    const buffer_id = CreateJobBuffer()
+
+    android_job = {
+        cmd: cmd,
+        job: job_start( cmd, {
+           close_cb: function( 'closeCallback' ),
+           out_io: 'buffer', out_buf: buffer_id, out_modifiable: 0,
+           err_io: 'buffer', err_buf: buffer_id, err_modifiable: 0
+        } )
+    }
+enddef
+
+defcompile
