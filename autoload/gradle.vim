@@ -19,16 +19,24 @@ export def gradle#getTasks( arglead: string, cmdline: string, cursor_pos: number
                 ->filter( (_, v) => v =~# arglead )
 enddef
 
-export def gradle#run( ...cmd: list< string > ): void
+export def gradle#runAsync( ...args: list< string > ): void
     if !executable( g:gradle_bin )
         echom printf('Gradle binary %s is not found.', g:gradle_bin )
     endif
 
-    # TODO: investigate <f-args> and <q-args>,
-    # and maybe -nargs=* and maybe input type list< string >
-    # for some reason cmd needs to be split, otherwise it cannot
-    # parse something with spaces
-    call job#run( CreateGradleCmd( cmd ) )
+    cexpr CreateGradleCmd( args )
+          ->join()
+          ->systemlist()
+          ->join("\n")
+enddef
+
+export def gradle#run( ...args: list< string > ): void
+    if !executable( g:gradle_bin )
+        echom printf('Gradle binary %s is not found.', g:gradle_bin )
+    endif
+
+    # echom "I got: " .. string(args)
+    job#run( CreateGradleCmd( args ) )
 enddef
 
 defcompile

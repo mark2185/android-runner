@@ -21,35 +21,23 @@ g:gradle_project_root   = get( g:, 'gradle_project_root', g:android_project_root
 
 g:android_lldb_server_bin = get( g:, 'android_lldb_server_bin', '' )
 
-if g:android_runner_experimental
-    # import * as asdf from "../autoload/adb9.vim"
-    # command! -nargs=1 -complete=customlist,gradle9#getTasks       GradleRun          call gradle9#run(<f-args>)
-    #command! -nargs=? -complete=customlist,adb#completeDevices   AdbSelectDevice    call adb#SelectDevice(<f-args>)
-    #command! -nargs=0                                            AdbShell           call adb#shell()
-    #command! -nargs=1                                            AdbRun             call adb#run(<f-args>)
-    #command! -nargs=0                                            AdbDevices         echom adb#devices()->join("\n")
-    #command! -nargs=?                                            AdbInstall         call adb#installApp(<f-args>)
-    #command! -nargs=?                                            AdbStart           call adb#startApp(<f-args>)
-    #command! -nargs=?                                            AdbLogcat          call adb#getLogcatOutput(<f-args>)
-    #command! -nargs=?                                            AdbLogcatClear     call adb#clearLogcat(<f-args>)
-    #command! -nargs=1 -complete=customlist,adb#completeBuildType AdbSelectBuildType call adb#SelectBuildType(<f-args>)
-    #command! -nargs=+ -complete=file                             AdbPush            call adb#push(<f-args>)
-    #command! -nargs=1 -complete=dir                              AdbChangeAndroidProjectRoot call adb#setAndroidProjectRoot(<f-args>)
-else
-    command! -nargs=1 -complete=customlist,gradle#getTasks       GradleRun          call gradle#run(<f-args>)
-    command! -nargs=? -complete=customlist,adb#completeDevices   AdbSelectDevice    call adb#SelectDevice(<f-args>)
-    command! -nargs=0                                            AdbShell           call adb#shell()
-    command! -nargs=1                                            AdbRun             call adb#run(<f-args>)
-    command! -nargs=0                                            AdbDevices         echom adb#devices()->join("\n")
-    command! -nargs=?                                            AdbInstall         call adb#installApp(<f-args>)
-    command! -nargs=?                                            AdbStart           call adb#startApp(<f-args>)
-    command! -nargs=?                                            AdbLogcat          call adb#getLogcatOutput(<f-args>)
-    command! -nargs=?                                            AdbLogcatClear     call adb#clearLogcat(<f-args>)
-    command! -nargs=1 -complete=customlist,adb#completeBuildType AdbSelectBuildType call adb#SelectBuildType(<f-args>)
-    command! -nargs=+ -complete=file                             AdbPush            call adb#push(<f-args>)
-    command! -nargs=1 -complete=dir                              AdbChangeAndroidProjectRoot call adb#setAndroidProjectRoot(<f-args>)
+# TODO: command for killing app on device
 
-    # this does push, install, start, logcat
-    command! -nargs=*                                            AdbShazam call adb#shazam(<f-args>)
-endif
+command! -nargs=* -complete=customlist,gradle#getTasks       GradleRun          call gradle#run(<f-args>)
+command! -nargs=?                                            AdbShell           call adb#shell(<f-args>)
+command! -nargs=? -complete=customlist,adb#completeDevices   AdbSelectDevice    call adb#selectDevice(<f-args>)
+command! -nargs=*                                            AdbRun             call adb#run(<f-args>)
+command! -nargs=0                                            AdbDevices         echom adb#devices()
+#command! -nargs=?                                            AdbInstall         call adb#installApp(<f-args>)
+#command! -nargs=?                                            AdbStart           call adb#startApp(<f-args>)
+command! -nargs=?                                            AdbLogcat          call adb#getLogcatOutput(<f-args>)
+command! -nargs=?                                            AdbLogcatClear     call adb#clearLogcat(<f-args>)
+command! -nargs=? AdbStartLLDB  call adb#startLLDB(<f-args>)
+command! -nargs=? AdbStartDebug call adb#startAppDebug(<f-args>)
+command! -nargs=? AdbStopLLDB   call adb#stopLLDB(<f-args>)
+#command! -nargs=1 -complete=customlist,adb#completeBuildType AdbSelectBuildType call adb#SelectBuildType(<f-args>)
+#command! -nargs=+ -complete=file                             AdbPush            call adb#push(<f-args>)
+#command! -nargs=1 -complete=dir                              AdbChangeAndroidProjectRoot call adb#setAndroidProjectRoot(<f-args>)
 
+## this does push, install, start, logcat
+command! -nargs=*                                            AdbShazam call adb#shazam(<f-args>)
