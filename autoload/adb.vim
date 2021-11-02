@@ -21,7 +21,7 @@ def ExecuteSync( cmd: list< string > ): string
            ->join("\n")
 enddef
 
-def CreateAdbCmd( cmd: list< string >, device: any = g:android_target_device ): list< string >
+def CreateAdbCmd( cmd: list< string >, device: string = <string>g:android_target_device ): list< string >
     return [
         g:adb_bin,
         '-s',
@@ -29,14 +29,14 @@ def CreateAdbCmd( cmd: list< string >, device: any = g:android_target_device ): 
     ] + cmd
 enddef
 
-def GetProperty( property: string, device: string = string( g:android_target_device ) ): string
+def GetProperty( property: string, device: string = <string> g:android_target_device ): string
     return CreateAdbCmd( [ 'shell', 'getprop', property ], device )
            ->join()
            ->systemlist()
            ->join()
 enddef
 
-def GetDeviceInfo( properties: list< string > = [ 'sdk', 'version', 'model' ], device: string = string( g:android_target_device ) ): dict< string >
+def GetDeviceInfo( properties: list<string> = ['sdk', 'version', 'model'], device: string = <string> g:android_target_device ): dict< string >
     var result = { 'device': device }
     for property in properties
                     ->filter( (_, v) => index( android_properties->keys(), v ) != -1 )
@@ -45,7 +45,8 @@ def GetDeviceInfo( properties: list< string > = [ 'sdk', 'version', 'model' ], d
     return result
 enddef
 
-def IsDeviceValid( target_device: string = string( g:android_target_device ) ): bool
+# TODO: check this as it should be checked
+def IsDeviceValid( target_device: string ): bool
     return !empty( target_device )
            #&& index( adb#devices(['device'])
            #          ->map( ( _, v ) => v[ 'device' ]),
@@ -62,14 +63,13 @@ def adb#devices( properties: list< string > = [] ): list< dict< string > >
 
     var result = []
     for d in devices
-        echom d
         result->add( GetDeviceInfo( properties, d ) )
     endfor
     return result
 enddef
 
-def adb#getPid( app_name: any = g:app_pkg .. '.' .. g:android_target_app ): number
-    if !IsDeviceValid()
+def adb#getPid( app_name: string = <string> g:app_pkg .. '.' .. g:android_target_app ): number
+    if !IsDeviceValid( g:android_target_device )
         echom printf( "Device '%s' not found!", g:android_target_device )
         return -1
     endif
@@ -87,19 +87,19 @@ def adb#getPid( app_name: any = g:app_pkg .. '.' .. g:android_target_app ): numb
            ->str2nr()
 enddef
 
-def adb#install( src = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ) ): string
-    if !IsDeviceValid()
-        echom printf( "Device '%s' not found!", g:android_target_device )
+def adb#install( src: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ) ): string
+    if !IsDeviceValid( g:android_target_device )
+        echom 'Device not found!'
         return 'Device not valid'
     endif
 
     return ExecuteSync( CreateAdbCmd( [ 'shell', 'pm', 'install', '-t', '-r', src ] ) )
 enddef
 
-def adb#installAsync( src = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ) ): void
-    if !IsDeviceValid()
-        echom printf( "Device '%s' not found!", g:android_target_device )
-        return 
+def adb#installAsync( src: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ) ): void
+    if !IsDeviceValid( g:android_target_device )
+        echom 'Device not found!'
+        return
     endif
 
     call job#run( CreateAdbCmd( [ 'shell', 'pm', 'install', '-t', '-r', src ] ) )
@@ -120,72 +120,44 @@ def adb#push(
       dst: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ),
      ): void
 
-    if !IsDeviceValid()
-        echom printf( "Device '%s' not found!", g:android_target_device )
+    if !IsDeviceValid( g:android_target_device )
+        echom 'Device not found!'
         return
     endif
 
     if empty( g:android_project_root )
-        echom "Android project root is empty!"
-        # TODO: ask to user if they want to 
-        # set it based on gradle_bin
+        echom 'Android project root is empty, use :GradleSetup'
         return
     endif
 
-    cexpr ExecuteSync( CreateAdbCmd( [ 'push', src, dst ] ) )
+    silent cexpr ExecuteSync( CreateAdbCmd( [ 'push', src, dst ] ) )
+    botright copen
 enddef
 
 def adb#pushAsync(
       src: string = printf( '%s/app/build/outputs/apk/%s/app-%s.apk', g:android_project_root, build_type_name, build_type_name ),
       dst: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ),
-      async: bool = v:true ): void
+     ): void
 
-    if !IsDeviceValid()
-        echom printf( "Device '%s' not found!", g:android_target_device )
+    if !IsDeviceValid( g:android_target_device )
+        echom 'Device not found!'
         return
     endif
 
     if empty( g:android_project_root )
-        echom "Android project root is empty!"
-        # TODO: ask to user if they want to 
-        # set it based on gradle_bin
+        echom 'Android project root is empty, use :GradleSetup'
         return
     endif
 
     call job#run( CreateAdbCmd( [ 'push', src, dst ] ) )
 enddef
-#
-#function! adb#setAndroidProjectRoot( path ) abort
-#    if !isdirectory( a:path )
-#        echom "This is not a valid directory!"
-#        return
-#    endif
-#
-#    let g:android_project_root = a:path
-#    let g:gradle_project_root = g:android_project_root
-#    let g:gradle_bin          = g:gradle_project_root . '/gradlew'
-#endfunction
-#
-#" let g:android_target_device = ''
-#" let g:android_target_app = ''
-#" if len(adb#completeDevices()) == 1
-#"     let g:android_target_device = adb#completeDevices()[0]
-#" endif
-#
-def adb#completeDevices( arglead: string, cmdline: string, cursor_pos: number ): list< string >
-    var result = [] 
-    for entry in adb#devices( [ 'device' ] )
-        result->add( entry['device'] )
-    endfor
-    return result
-enddef
 
 # TODO: inputlist may be friendlier() ?
-def adb#selectDevice( ...device: list< string > ): void
-    if empty( device )
-        echom 'Current target device: ' .. ( empty( g:android_target_device ) ? 'none' : g:android_target_device )
-    else
+def adb#selectDevice(): void
+    if !empty( device )
         g:android_target_device = device[ 0 ]
+    else
+        # const usr_input = inputlist()
     endif
 enddef
 
@@ -206,9 +178,14 @@ enddef
 #
 #" benchmark_app_pkg = 'com.microblink.exerunner.' . 'application_build.application_name'
 #" activity_class = 'com.microblink.exerunner.RunActivity'
-def adb#start( app_name: any = g:android_target_app, package_path: string = 'com.microblink.exerunner', activity_class = 'com.microblink.exerunner.RunActivity' ): string
-    if !IsDeviceValid()
-        return printf( "Device '%s' not found!", g:android_target_device )
+def adb#start(
+     app_name:       string = <string>g:android_target_app,
+     package_path:   string = 'com.microblink.exerunner',
+     activity_class: string = 'com.microblink.exerunner.RunActivity'
+     ): string
+
+    if !IsDeviceValid( g:android_target_device )
+        return 'Device not found!'
     endif
 
     return ExecuteSync( CreateAdbCmd( [
@@ -216,7 +193,7 @@ def adb#start( app_name: any = g:android_target_app, package_path: string = 'com
         'am',
         'start',
         '-n',
-        package_path .. '.' .. app_name .. '/' .. activity_class,
+        printf( '%s.%s/%s', package_path, app_name, activity_class ),
         '-a',
         'android.intent.action.MAIN',
         '-c',
@@ -224,10 +201,14 @@ def adb#start( app_name: any = g:android_target_app, package_path: string = 'com
         ] ) )
 enddef
 
-def adb#startAsync( app_name: string = string(g:android_target_app ), package_path = 'com.microblink.exerunner', activity_class = 'com.microblink.exerunner.RunActivity' ): void
-    if !IsDeviceValid()
-        echom printf( "Device '%s' not found!", g:android_target_device )
-        return 
+def adb#startAsync(
+     app_name:       string = <string>g:android_target_app,
+     package_path:   string = 'com.microblink.exerunner',
+     activity_class: string = 'com.microblink.exerunner.RunActivity' ): void
+
+    if !IsDeviceValid( g:android_target_device )
+        echom 'Device not found!'
+        return
     endif
 
     call job#run( CreateAdbCmd( [
@@ -235,7 +216,7 @@ def adb#startAsync( app_name: string = string(g:android_target_app ), package_pa
         'am',
         'start',
         '-n',
-        package_path .. '.' .. app_name .. '/' .. activity_class,
+        printf( '%s.%s/%s', package_path, app_name, activity_class ),
         '-a',
         'android.intent.action.MAIN',
         '-c',
@@ -246,7 +227,7 @@ enddef
 #function! adb#startAppDebug( app_name = g:android_target_app, package_path = 'com.microblink.exerunner', activity_class = 'com.microblink.exerunner.RunActivity' ) abort
 #    if !s:isDeviceValid()
 #        echom printf( "Device '%s' not found!", g:android_target_device )
-#        return 
+#        return
 #    endif
 #
 #    let l:cmd = s:createAdbCmd( [
@@ -267,7 +248,7 @@ enddef
 #function! adb#clearLogcat( app_name = g:app_pkg . '.' . g:android_target_app ) abort
 #    if !s:isDeviceValid()
 #        echom printf( "Device '%s' not found!", g:android_target_device )
-#        return 
+#        return
 #    endif
 #
 #    call system( s:createAdbCmd( [ 'logcat', '-c', '--pid', adb#getPid( a:app_name ) ] )->join() )
@@ -278,9 +259,9 @@ enddef
 #endfunction
 #
 def adb#getLogcatOutput( app_name: string = 'com.microblink.exerunner.' .. g:android_target_app ): void
-    if !IsDeviceValid()
-        echom printf( "Device '%s' not found!", g:android_target_device )
-        return 
+    if !IsDeviceValid( g:android_target_device )
+        echom 'Device not found!'
+        return
     endif
 
     if adb#getPid( app_name ) == -1
@@ -288,13 +269,14 @@ def adb#getLogcatOutput( app_name: string = 'com.microblink.exerunner.' .. g:and
         return
     endif
 
+    # TODO: check if pidcat exists and use that
     call job#run( CreateAdbCmd( [ 'logcat', '--pid', string( adb#getPid( app_name ) ) ] ) )
 enddef
 #
 #function! adb#getPidcatOutput( app_name = 'com.microblink.exerunner.' . g:android_target_app ) abort
 #    if !s:isDeviceValid()
 #        echom printf( "Device '%s' not found!", g:android_target_device )
-#        return 
+#        return
 #    endif
 #
 #    call job#run( ['pidcat', a:app_name] )
@@ -305,14 +287,22 @@ enddef
 #endfunction
 #
 
-def adb#shazam( app_name: any = g:android_target_app, package_path: string = 'com.microblink.exerunner', activity_class: string = 'RunActivity' ): void
-    if !IsDeviceValid()
-        echom printf( "Device '%s' not found!", g:android_target_device )
-        return 
+def adb#restart(): void
+    call job#run( printf( '%s kill-server && %d start-server', g:adb_bin, g:adb_bin ) )
+enddef
+
+def adb#shazam(
+     app_name:       string = <string>g:android_target_app,
+     package_path:   string = 'com.microblink.exerunner',
+     activity_class: string = 'RunActivity' ): void
+
+    if !IsDeviceValid( g:android_target_device )
+        echom 'Device not found!'
+        return
     endif
 
     if empty( g:android_project_root )
-        echom "Android project root is empty!"
+        echom 'Android project root is empty, use :GradleSetup'
         return
     endif
 
@@ -322,25 +312,25 @@ def adb#shazam( app_name: any = g:android_target_app, package_path: string = 'co
 
     call adb#push( src, dst )
 
-    if v:shell_error | echom "Shell returned error!" | copen | return | endif
+    if v:shell_error | echom "Shell returned error!" | botright copen | return | endif
 
     # install
     const app_apk = printf('/data/local/tmp/%s.%s', g:app_pkg, app_name )
 
     call adb#install( app_apk )
 
-    if v:shell_error | echom "Shell returned error!" | copen | return | endif
+    if v:shell_error | echom "Shell returned error!" | botright copen | return | endif
 
     # TODO: check on android if it's done
     sleep 2
-    
+
     # start
     const app = printf( '%s.%s/%s.%s', package_path, app_name, package_path, activity_class )
 
     echom "Sending: " .. app
     echom adb#start( 'CoreUtilsTest' )
 
-    if v:shell_error | echom "Shell returned error!" | copen | return | endif
+    if v:shell_error | echom "Shell returned error!" | botright copen | return | endif
 
     sleep 2
 
@@ -366,7 +356,7 @@ enddef
 #function! adb#profileStart( target_device = g:android_target_device ) abort
 #    if !s:isDeviceValid( a:target_device ) abort
 #        echom printf( "Device '%s' not found!", a:target_device )
-#        return 
+#        return
 #    endif
 #endfunction
 #
@@ -376,36 +366,48 @@ enddef
 #    return s:lldb_port
 #endfunction
 
+def adb#startProfiler( target_device: any = g:android_target_device )
+enddef
+
 def adb#startLLDB( target_device: any = g:android_target_device )
     if !IsDeviceValid( target_device )
         echom printf( "Device '%s' not found!", target_device )
-        return 
+        return
     endif
 
-    # TODO: get it from ANDROID_SDK and getprop cpu.abi
-    if empty( g:android_lldb_server_bin ) || !executable( g:android_lldb_server_bin )
-        echom printf( "Binary '%s' not found or not executable!", g:android_lldb_server_bin )
-        return 
-    endif
-
-    call adb#push( g:android_lldb_server_bin, '/data/local/tmp/lldb-server' )
-
-    if v:shell_error | echom "Shell error!" | copen | return | endif
-
+    # TODO: check if the file already exists
     var cmd = [
         'shell',
-        'run-as',
-        printf( '%s.%s', g:app_pkg, g:android_target_app ),
-        'cp',
-        '/data/local/tmp/lldb-server',
-        '.'
+        'ls',
+        '/data/local/tmp/lldb-server'
     ]
 
-    # TODO: this is broken: https://github.com/vim/vim/issues/8926
-    # call adb#run( cmd )
-    ExecuteSync( [ g:adb_bin ] + cmd )
+    const found_lldb_server = 'no such file' !~# ExecuteSync( CreateAdbCmd( cmd ) )
 
-    if v:shell_error | echom "Shell error!" | copen | return | endif
+    if found_lldb_server
+        # TODO: get it from ANDROID_SDK and getprop cpu.abi
+        if empty( g:android_lldb_server_bin ) || !executable( g:android_lldb_server_bin )
+            echom printf( "Binary '%s' not found or not executable!", g:android_lldb_server_bin )
+            return
+        endif
+
+        call adb#push( g:android_lldb_server_bin, '/data/local/tmp/lldb-server' )
+
+        if v:shell_error | echom "Shell error!" | botright copen | return | endif
+
+        cmd = [
+            'shell',
+            'run-as',
+            printf( '%s.%s', g:app_pkg, g:android_target_app ),
+            'cp',
+            '/data/local/tmp/lldb-server',
+            '.'
+        ]
+
+        call adb#run( cmd->join() )
+
+        if v:shell_error | echom "Shell error!" | botright copen | return | endif
+    endif
 
     cmd = [
         'shell',
@@ -413,17 +415,17 @@ def adb#startLLDB( target_device: any = g:android_target_device )
         printf( '%s.%s', g:app_pkg, g:android_target_app ),
         './lldb-server',
         'platform',
-        'server',
+        '--server',
         '--listen "*:54321"',
         '&'
     ]
 
     # TODO: this is broken: https://github.com/vim/vim/issues/8926
-    # call adb#run( cmd )
-    ExecuteSync( [ g:adb_bin ] + cmd )
+    # adb#run( cmd->join() )
+    botright cexpr ExecuteSync( [ g:adb_bin ] + cmd )
 
     sleep 2
-    if v:shell_error | echom "Shell error!" | copen | return | endif
+    if v:shell_error | echom "Shell error!" | botright copen | return | endif
 
     cmd = [
         'forward',
@@ -433,17 +435,30 @@ def adb#startLLDB( target_device: any = g:android_target_device )
 
     # TODO: this is broken: https://github.com/vim/vim/issues/8926
     # call adb#run( cmd )
-    ExecuteSync( [ g:adb_bin ] + cmd )
+    botright cexpr ExecuteSync( [ g:adb_bin ] + cmd )
 
     sleep 2
-    if v:shell_error | echom "Shell error!" | copen | return | endif
+    if v:shell_error | echom "Shell error!" | botright copen | return | endif
 enddef
 
 def adb#startAppDebug( app_name: any = g:android_target_app, package_path = 'com.microblink.exerunner', activity_class = 'com.microblink.exerunner.RunActivity' )
-    if !IsDeviceValid()
+    if !IsDeviceValid( g:android_target_device )
         echom printf( "Device '%s' not found!", g:android_target_device )
-        return 
+        return
     endif
+
+    # push
+    const src = printf( '%s/app/build/outputs/apk/%s/app-%s.apk', g:android_project_root, build_type_name, build_type_name )
+    const dst = printf( '/data/local/tmp/%s.%s', g:app_pkg, app_name )
+
+    call adb#push( src, dst )
+
+    if v:shell_error | echom "Shell returned error!" | botright copen | return | endif
+
+    # install
+    const app_apk = printf('/data/local/tmp/%s.%s', g:app_pkg, app_name )
+
+    call adb#install( app_apk )
 
     var cmd = CreateAdbCmd( [
         'shell',
@@ -463,10 +478,11 @@ def adb#startAppDebug( app_name: any = g:android_target_app, package_path = 'com
     # TODO: don't guesstimate
     sleep 2
 
+    const app_pid = string( adb#getPid( [ package_path, app_name ]->join('.') ) )
     cmd = CreateAdbCmd( [
         'forward',
         'tcp:54321',
-        'jdwp:' .. string( adb#getPid( [ package_path, app_name ]->join('.')) )
+        'jdwp:' .. app_pid
     ] )
 
     # TODO: this is broken: https://github.com/vim/vim/issues/8926
@@ -476,8 +492,9 @@ def adb#startAppDebug( app_name: any = g:android_target_app, package_path = 'com
     # TODO: don't guesstimate
     sleep 3
 
-    job#run( [ 'jdb', '-attach', 'localhost:54321' ] )
-    echom "Pid is: " .. string( adb#getPid( [ package_path, app_name ]->join('.') ) )
+    botright cexpr ExecuteSync( [ 'jdb', '-attach', 'localhost:54321', '&' ] )
+    echom "Pid is: " .. app_pid .. ", it's stored in the register p"
+    setreg( 'p', app_pid )
 enddef
 
 def adb#stopLLDB( target_device: any = g:android_target_device )
@@ -492,29 +509,29 @@ def adb#stopLLDB( target_device: any = g:android_target_device )
     cgetexpr ExecuteSync( cmd )
 
     cmd = [
-        'pkill', 
+        'pkill',
         'jdb'
     ]
 
-    cexpr ExecuteSync( cmd )
+    botright cexpr ExecuteSync( cmd )
 
     sleep 2
-    if v:shell_error | echom "Shell error!" | copen | return | endif
+    if v:shell_error | echom "Shell error!" | botright copen | return | endif
 enddef
 
-
-def adb#shell( target_device: any = g:android_target_device ): void
+def adb#shell( target_device: string = <string>g:android_target_device ): void
+    echom printf( "I got: '%s'", target_device )
     if !IsDeviceValid( target_device )
-        echom printf( "Device '%s' not found!", target_device )
-        return 
+        echom "Device not found!"
+        return
     endif
 
-    execute printf( 'bo term ++close %s -s %s shell', g:adb_bin, target_device )
+    execute printf( 'botright term ++close %s -s %s shell', g:adb_bin, target_device )
 enddef
 
 def adb#runAsync( ...args: list< string > ): void
     if !executable( g:adb_bin )
-        echom printf( 'adb binary %s is not found.', g:adb_bin )
+        echom printf( "adb binary '%s' is not found.", g:adb_bin )
     endif
 
     call job#run( [ g:adb_bin ] + args )
@@ -522,12 +539,29 @@ enddef
 
 export def adb#run( ...args: list< string > ): void
     if !executable( g:adb_bin )
-        echom printf( 'adb binary %s is not found.', g:adb_bin )
+        echom printf( "adb binary '%s' is not found.", g:adb_bin )
     endif
 
     const cmd = [ g:adb_bin ] + args
 
+    setqflist( [], 'r' )
     cexpr ExecuteSync( cmd )
+    setqflist( [], 'a', { 'title': cmd->join() } )
+    botright copen
 enddef
+
+def SelectAndroidDevice( timer: number ): void
+    if IsDeviceValid( g:android_target_device )
+        return
+    endif
+    const devices = adb#devices( [] )
+    if empty( devices )
+        g:android_target_device = ''
+    elseif len( devices ) == 1
+        g:android_target_device = devices[0]['device']
+    endif
+enddef
+
+timer_start( 2000, funcref('SelectAndroidDevice'), { 'repeat': -1 } )
 
 defcompile

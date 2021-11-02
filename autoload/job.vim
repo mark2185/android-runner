@@ -20,7 +20,7 @@ def CreateJobBuffer(): number
 
     call bufload( job_bufname )
 
-    silent exec 'keepalt below split ' .. job_bufname
+    silent exec 'keepalt botright split ' .. job_bufname
 
     nmap <buffer> <C-c> :call job#stop()<CR>
     nmap <buffer> <C-r> :call job#clearBuffer()<CR>
@@ -50,7 +50,7 @@ def CreateQuickFix(): void
 enddef
 
 def CloseCallback( channel: channel ): void
-    if !has_key( android_job, 'job') 
+    if !has_key( android_job, 'job')
         return
     endif
 
@@ -63,7 +63,7 @@ def CloseCallback( channel: channel ): void
     # Remove android job
     android_job = {}
 
-    copen
+    cwindow
 enddef
 
 def job#stop(): void
@@ -88,6 +88,7 @@ enddef
 def job#run( cmd: list< string > ): void
     if job_bufid != -1
         echom 'Job already running!'
+        return
     endif
 
     cclose
