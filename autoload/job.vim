@@ -4,6 +4,7 @@ const job_bufname = 'android_execute'
 
 var android_job = {}
 var job_bufid   = -1
+var job_queue: list< list< string > > = []
 
 def CreateJobBuffer(): number
     if job_bufid != -1
@@ -23,7 +24,7 @@ def CreateJobBuffer(): number
     silent exec 'keepalt botright split ' .. job_bufname
 
     nmap <buffer> <C-c> :call job#stop()<CR>
-    nmap <buffer> <C-r> :call job#clearBuffer()<CR>
+    nmap <buffer> <C-r> :call job#clearBuffer( job_bufid )<CR>
 
     return job_bufid
 enddef
@@ -49,13 +50,33 @@ def CreateQuickFix(): void
     silent call setqflist( [], 'a', { 'title': android_job[ 'cmd' ]->join() } )
 enddef
 
+def StartJob( cmd: list< string >, buffer_id: number = job_bufid ): void
+    android_job = {
+        cmd: cmd,
+        job: job_start( cmd, {
+           close_cb: function( 's:CloseCallback' ),
+           out_io: 'buffer', out_buf: buffer_id, out_modifiable: 0,
+           err_io: 'buffer', err_buf: buffer_id, err_modifiable: 0
+        } )
+    }
+enddef
+
 def CloseCallback( channel: channel ): void
-    if !has_key( android_job, 'job')
+    if empty( android_job ) || !has_key( android_job, 'job')
         return
     endif
 
-    echon ( job_info( s:android_job[ 'job' ] )[ 'exitval' ] != 0 ) ? "Failure!" : "Success!"
-    echon "\n" .. android_job[ 'cmd' ]->join()
+    const exitval = job_info( s:android_job[ 'job' ] )[ 'exitval' ]
+    if exitval == 0
+        if len( job_queue ) >= 1
+            var job = remove( job_queue, 0 )
+            StartJob( job )
+            return
+        endif
+    else
+        echon 'Failure!'
+        job#clearQueue()
+    endif
 
     call CreateQuickFix()
     call CloseJobBuffer()
@@ -79,10 +100,10 @@ def job#stop(): void
     echom 'Job is cancelled!'
 enddef
 
-def job#clearBuffer(): void
-    call setbufvar( job_bufid, "&modifiable", 1 )
+def job#clearBuffer( buffer_id: number ): void
+    call setbufvar( buffer_id, "&modifiable", 1 )
     exe ":%delete _"
-    call setbufvar( job_bufid, "&modifiable", 0 )
+    call setbufvar( buffer_id, "&modifiable", 0 )
 enddef
 
 def job#run( cmd: list< string > ): void
@@ -96,14 +117,20 @@ def job#run( cmd: list< string > ): void
     call CloseJobBuffer()
     const buffer_id = CreateJobBuffer()
 
-    android_job = {
-        cmd: cmd,
-        job: job_start( cmd, {
-           close_cb: function( 's:CloseCallback' ),
-           out_io: 'buffer', out_buf: buffer_id, out_modifiable: 0,
-           err_io: 'buffer', err_buf: buffer_id, err_modifiable: 0
-        } )
-    }
+    StartJob( cmd, buffer_id )
+enddef
+
+def job#processQueue(): void
+    var job = remove( job_queue, 0 )
+    job#run( job )
+enddef
+
+def job#addToQueue( cmd: list< string >): void
+    add( job_queue, cmd )
+enddef
+
+def job#clearQueue(): void
+    job_queue = []
 enddef
 
 defcompile
