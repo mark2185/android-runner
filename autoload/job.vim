@@ -12,14 +12,14 @@ def CreateJobBuffer(): number
     endif
 
     job_bufid = bufadd( job_bufname )
-    call setbufvar( job_bufid, "&buftype", 'nofile' )
-    call setbufvar( job_bufid, "&modifiable", 0 )
-    call setbufvar( job_bufid, "&hidden",     0 )
-    call setbufvar( job_bufid, "&swapfile",   0 )
-    call setbufvar( job_bufid, "&wrap",       0 )
-    call setbufvar( job_bufid, "&modifiable", 0 )
+    setbufvar( job_bufid, "&buftype", 'nofile' )
+    setbufvar( job_bufid, "&modifiable", 0 )
+    setbufvar( job_bufid, "&hidden",     0 )
+    setbufvar( job_bufid, "&swapfile",   0 )
+    setbufvar( job_bufid, "&wrap",       0 )
+    setbufvar( job_bufid, "&modifiable", 0 )
 
-    call bufload( job_bufname )
+    bufload( job_bufname )
 
     silent exec 'keepalt botright split ' .. job_bufname
 
@@ -47,13 +47,25 @@ def CreateQuickFix(): void
     sleep 100m
 
     execute 'cgetbuffer ' .. job_bufid
-    silent call setqflist( [], 'a', { 'title': android_job[ 'cmd' ]->join() } )
+    silent setqflist( [], 'a', { 'title': android_job[ 'cmd' ]->join() } )
+enddef
+
+def EvalCmd( cmd: list< string > ): list< string >
+    for i in range( len( cmd ) )
+        if cmd[ i ] =~# '%PID%'
+            const pid = string(adb#getPid())
+            cmd[ i ] = substitute( cmd[ i ], '%PID%', pid, '' )
+            echom "PID is " .. pid
+            g:android_target_app_pid = str2nr(pid)
+        endif
+    endfor
+    return cmd
 enddef
 
 def StartJob( cmd: list< string >, buffer_id: number = job_bufid ): void
     android_job = {
         cmd: cmd,
-        job: job_start( cmd, {
+        job: job_start( EvalCmd(cmd), {
            close_cb: function( 's:CloseCallback' ),
            out_io: 'buffer', out_buf: buffer_id, out_modifiable: 0,
            err_io: 'buffer', err_buf: buffer_id, err_modifiable: 0
@@ -67,8 +79,10 @@ def CloseCallback( channel: channel ): void
     endif
 
     const exitval = job_info( s:android_job[ 'job' ] )[ 'exitval' ]
+    echon android_job[ 'cmd' ]->join() .. "\n"
     if exitval == 0
         if len( job_queue ) >= 1
+            echom "Callback: exitval 0, remaining jobs: " .. len( job_queue )
             var job = remove( job_queue, 0 )
             StartJob( job )
             return
@@ -78,8 +92,8 @@ def CloseCallback( channel: channel ): void
         job#clearQueue()
     endif
 
-    call CreateQuickFix()
-    call CloseJobBuffer()
+    CreateQuickFix()
+    CloseJobBuffer()
 
     # Remove android job
     android_job = {}
@@ -91,7 +105,7 @@ def job#stop(): void
     if empty( android_job )
         # for fixing an undesired state in which there is no job running,
         # but a buffer still exists
-        call CloseJobBuffer()
+        CloseJobBuffer()
         return
     endif
 
@@ -101,9 +115,9 @@ def job#stop(): void
 enddef
 
 def job#clearBuffer( buffer_id: number ): void
-    call setbufvar( buffer_id, "&modifiable", 1 )
+    setbufvar( buffer_id, "&modifiable", 1 )
     exe ":%delete _"
-    call setbufvar( buffer_id, "&modifiable", 0 )
+    setbufvar( buffer_id, "&modifiable", 0 )
 enddef
 
 def job#run( cmd: list< string > ): void
@@ -121,7 +135,13 @@ def job#run( cmd: list< string > ): void
 enddef
 
 def job#processQueue(): void
+    if len( job_queue ) == 0
+        echom 'Job queue empty!'
+        return
+    endif
+
     var job = remove( job_queue, 0 )
+    echom "Processing queue, remaining jobs: " .. len( job_queue )
     job#run( job )
 enddef
 
@@ -130,6 +150,7 @@ def job#addToQueue( cmd: list< string >): void
 enddef
 
 def job#clearQueue(): void
+    echom "Cleaning queue! Dropping " .. len( job_queue ) .. " jobs!"
     job_queue = []
 enddef
 

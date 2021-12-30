@@ -46,5 +46,7 @@ command! -nargs=? AdbStopLLDB   call adb#stopLLDB(<f-args>)
 #command! -nargs=+ -complete=file                             AdbPush            call adb#push(<f-args>)
 #command! -nargs=1 -complete=dir                              AdbChangeAndroidProjectRoot call adb#setAndroidProjectRoot(<f-args>)
 
-## this does push, install, start, logcat
-command! -nargs=*                                            AdbShazam call adb#shazam(<f-args>)
+## this does push, install, start
+command! -nargs=*  AdbShazam   call adb#shazam(<f-args>)
+## this does push, install, start in debug mode
+command!           AdbDebugger call adb#launchDebugger()
