@@ -43,13 +43,11 @@ enddef
 
 export def gradle#setup( ...args: list< string > ): void
     # trim '/' from the end
-    const directory = args[0]->trim( '/', 2 )
+    const directory        = args[0]->trim( '/', 2 )
     g:android_project_root = directory
     g:gradle_project_root  = directory
-    g:gradle_bin = g:gradle_project_root .. '/gradlew'
-    g:adb_bin = $ANDROID_SDK->trim( '/', 2 ) ..  '/platform-tools/adb'
-    # TODO: trigger the timer some other way
-    adb#devices([])
+    g:gradle_bin           = g:gradle_project_root .. '/gradlew'
+    g:adb_bin              = $ANDROID_SDK->trim( '/', 2 ) ..  '/platform-tools/adb'
 enddef
 
 defcompile

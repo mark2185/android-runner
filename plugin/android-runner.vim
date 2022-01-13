@@ -32,7 +32,7 @@ command! -nargs=1 -complete=dir                              GradleSetup        
 command! -nargs=* -complete=customlist,gradle#getTasks       GradleRun          call gradle#runAsync(<f-args>)
 
 command! -nargs=?                                            AdbShell           call adb#shell(<f-args>)
-command! -nargs=?                                            AdbSelectDevice    call adb#selectDevice()
+command! -nargs=?                                            AdbSelectDevice    call adb#selectDevice(<f-args>)
 command! -nargs=*                                            AdbRun             call adb#run(<f-args>)
 command! -nargs=0                                            AdbDevices         echom adb#devices()
 #command! -nargs=?                                            AdbInstall         call adb#installApp(<f-args>)

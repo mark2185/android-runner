@@ -12,6 +12,8 @@ const android_properties = {
     abi:          'ro.product.cpu.abi',
 }
 
+var timer_id = -1
+
 const g:app_pkg = 'com.microblink.exerunner'
 
 def ExecuteSync( cmd: list< string > ): string
@@ -48,12 +50,14 @@ enddef
 # TODO: check this as it should be checked
 def IsDeviceValid( target_device: string ): bool
     return !empty( target_device )
-           #&& index( adb#devices(['device'])
-           #          ->map( ( _, v ) => v[ 'device' ]),
-           #          target_device ) != -1
+        && index( adb#devices(['device']), { 'device': target_device } ) != -1
 enddef
 
 def adb#devices( properties: list< string > = [] ): list< dict< string > >
+    if empty( g:adb_bin )
+        echom 'g:adb_bin not set!'
+        return []
+    endif
     const devices = systemlist( g:adb_bin .. ' devices' )
             ->filter( '!empty( v:val )' )
             ->map( 'v:val->matchstr(''\v^(.+)\s+device$'')' )
@@ -154,11 +158,16 @@ def adb#pushAsync(
 enddef
 
 # TODO: inputlist may be friendlier() ?
-def adb#selectDevice( device: string ): void
+def adb#selectDevice( device: string = '' ): void
     if !empty( device )
-        g:android_target_device = device[ 0 ]
+        g:android_target_device = device
     else
-        # const usr_input = inputlist()
+        const devices = adb#devices( ['device'] )
+        if len( devices ) == 1
+            g:android_target_device = devices[ 0 ][ 'device' ]
+        else
+            # inputlist ?
+        endif
     endif
 enddef
 
@@ -289,7 +298,7 @@ enddef
 #
 
 def adb#restart(): void
-    call job#run( [ printf( '%s kill-server && %d start-server', g:adb_bin, g:adb_bin ) ] )
+    call job#run( [ printf( '%s kill-server && %s start-server', g:adb_bin, g:adb_bin ) ] )
 enddef
 
 def adb#shazam(
@@ -297,6 +306,8 @@ def adb#shazam(
      package_path:   string = 'com.microblink.exerunner',
      activity_class: string = 'RunActivity'
     ): void
+
+    adb#selectDevice()
 
     if !IsDeviceValid( g:android_target_device )
         echom 'Device not found!'
@@ -594,6 +605,18 @@ def SelectAndroidDevice( timer: number ): void
     endif
 enddef
 
-timer_start( 1000, funcref('SelectAndroidDevice'), { 'repeat': -1 } )
+export def adb#startDeviceWatch(): void
+    if timer_id == -1
+        timer_id = timer_start( 1000, funcref('SelectAndroidDevice'), { 'repeat': -1 } )
+    endif
+enddef
+
+export def adb#stopDeviceWatch(): void
+    if timer_id == -1
+        return
+    endif
+    timer_stop( timer_id )
+    timer_id = -1
+enddef
 
 defcompile
