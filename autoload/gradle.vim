@@ -10,7 +10,7 @@ enddef
 
 # if it starts with [a-z], it's a task
 # this is used for autocompletion
-export def gradle#getTasks( arglead: string, cmdline: string, cursor_pos: number ): list< string >
+export def GetTasks( arglead: string, cmdline: string, cursor_pos: number ): list< string >
     return systemlist( CreateGradleCmd( [ ':app:tasks' ] )->join() )
                 ->filter( '!empty( v:val )' )
                 ->filter( 'v:val =~# "^[a-z]"' )
@@ -19,7 +19,7 @@ export def gradle#getTasks( arglead: string, cmdline: string, cursor_pos: number
                 ->filter( (_, v) => v =~# arglead )
 enddef
 
-export def gradle#run( ...args: list< string > ): void
+export def Run( ...args: list< string > ): void
     if !executable( g:gradle_bin )
         echom printf("Gradle binary '%s' is not found.", g:gradle_bin )
         return
@@ -31,17 +31,17 @@ export def gradle#run( ...args: list< string > ): void
           ->join("\n")
 enddef
 
-export def gradle#runAsync( ...args: list< string > ): void
+export def RunAsync( ...args: list< string > ): void
     if !executable( g:gradle_bin )
         echom printf("Gradle binary '%s' is not found.", g:gradle_bin )
         return
     endif
 
     # echom "I got: " .. string(args)
-    job#run( CreateGradleCmd( args ) )
+    job#Run( CreateGradleCmd( args ) )
 enddef
 
-export def gradle#setup( ...args: list< string > ): void
+export def Setup( ...args: list< string > ): void
     # trim '/' from the end
     const directory        = args[0]->trim( '/', 2 )
     g:android_project_root = directory

@@ -23,8 +23,8 @@ def CreateJobBuffer(): number
 
     silent exec 'keepalt botright split ' .. job_bufname
 
-    nmap <buffer> <C-c> :call job#stop()<CR>
-    nmap <buffer> <C-r> :call job#clearBuffer( job_bufid )<CR>
+    nmap <buffer> <C-c> :call job#Stop()<CR>
+    nmap <buffer> <C-r> :call job#ClearBuffer( job_bufid )<CR>
 
     return job_bufid
 enddef
@@ -46,7 +46,7 @@ def CreateQuickFix(): void
     # just to be sure all messages were processed
     sleep 100m
 
-    execute 'cgetbuffer ' .. job_bufid
+    execute 'botright cgetbuffer ' .. job_bufid
     silent setqflist( [], 'a', { 'title': android_job[ 'cmd' ]->join() } )
 enddef
 
@@ -89,7 +89,7 @@ def CloseCallback( channel: channel ): void
         endif
     else
         echon 'Failure!'
-        job#clearQueue()
+        ClearQueue()
     endif
 
     CreateQuickFix()
@@ -101,7 +101,7 @@ def CloseCallback( channel: channel ): void
     cwindow
 enddef
 
-def job#stop(): void
+export def Stop(): void
     if empty( android_job )
         # for fixing an undesired state in which there is no job running,
         # but a buffer still exists
@@ -114,13 +114,13 @@ def job#stop(): void
     echom 'Job is cancelled!'
 enddef
 
-def job#clearBuffer( buffer_id: number ): void
+export def ClearBuffer( buffer_id: number ): void
     setbufvar( buffer_id, "&modifiable", 1 )
     exe ":%delete _"
     setbufvar( buffer_id, "&modifiable", 0 )
 enddef
 
-def job#run( cmd: list< string > ): void
+export def Run( cmd: list< string > ): void
     if job_bufid != -1
         echom 'Job already running!'
         return
@@ -134,7 +134,7 @@ def job#run( cmd: list< string > ): void
     StartJob( cmd, buffer_id )
 enddef
 
-def job#processQueue(): void
+export def ProcessQueue(): void
     if len( job_queue ) == 0
         echom 'Job queue empty!'
         return
@@ -142,14 +142,14 @@ def job#processQueue(): void
 
     var job = remove( job_queue, 0 )
     echom "Processing queue, remaining jobs: " .. len( job_queue )
-    job#run( job )
+    Run( job )
 enddef
 
-def job#addToQueue( cmd: list< string >): void
+export def AddToQueue( cmd: list< string >): void
     add( job_queue, cmd )
 enddef
 
-def job#clearQueue(): void
+def ClearQueue(): void
     echom "Cleaning queue! Dropping " .. len( job_queue ) .. " jobs!"
     job_queue = []
 enddef

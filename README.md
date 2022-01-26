@@ -121,3 +121,10 @@ g:gradle_flags          - flags that are injected into gradle invocations, defau
 To stop a job press `<C-c>` in the job's buffer.
 
 To clear the logcat press `<leader>c` in the job's buffer.
+
+## Miscellaneous
+
+If you want to input text on a connected android:
+```
+AdbRun input text "--gtest_filter=TestSuite.TestCase"
+```
