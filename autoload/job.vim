@@ -150,7 +150,10 @@ export def AddToQueue( cmd: list< string >): void
 enddef
 
 def ClearQueue(): void
-    echom "Cleaning queue! Dropping " .. len( job_queue ) .. " jobs!"
+    const queue_length = len( job_queue )
+    if queue_length
+        echom printf( "Cleaning queue! Dropping %d jobs!", len( job_queue ) )
+    endif
     job_queue = []
 enddef
 

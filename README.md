@@ -33,6 +33,7 @@ GradleRun           - runs `gradle` commands with `g:gradle_project_root` as cur
 AdbSelectDevice     - select one of the detected devices as your target
 AdbShell            - spawn shell on the target device
 AdbRun              - run a command on the  target device
+AdbInputText        - inputs given text on the device
 AdbDevices          - list all devices
 AdbInstall          - install given apk on target device
 AdbStart            - start given app on target device
