@@ -78,7 +78,7 @@ def CloseCallback( channel: channel ): void
         return
     endif
 
-    const exitval = job_info( s:android_job[ 'job' ] )[ 'exitval' ]
+    const exitval = job_info( android_job[ 'job' ] )[ 'exitval' ]
     echon android_job[ 'cmd' ]->join() .. "\n"
     if exitval == 0
         if len( job_queue ) >= 1
