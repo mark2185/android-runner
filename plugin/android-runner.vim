@@ -33,7 +33,7 @@ g:android_lldb_server_bin = get( g:, 'android_lldb_server_bin', '' )
 # TODO: command for killing app on device
 
 command! -nargs=1 -complete=dir                              GradleSetup        call gradle#Setup(<f-args>)
-command! -nargs=* -complete=customlist,gradle#getTasks       GradleRun          call gradle#RunAsync(<f-args>)
+command! -nargs=* -complete=customlist,gradle#GetTasks       GradleRun          call gradle#RunAsync(<f-args>)
 
 command! -nargs=?                                            AdbShell           call adb#Shell(<f-args>)
 command! -nargs=?                                            AdbSelectDevice    call adb#SelectDevice(<f-args>)

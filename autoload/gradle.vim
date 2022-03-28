@@ -3,8 +3,9 @@ vim9script
 def CreateGradleCmd( cmd: list< string > ): list< string >
     return [
         g:gradle_bin,
-        g:gradle_flags,
+        '-p',
         g:gradle_project_root
+        g:gradle_flags,
     ] + cmd
 enddef
 
