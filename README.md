@@ -1,7 +1,7 @@
 # android-runner
 Run gradle and android related stuff
 
-Android Studio craves more gigabytes of RAM that I am willing to buy so this plugin was crated to alleviate some of the problems of Android related development.
+Android Studio craves more gigabytes of RAM that I am willing to buy so this plugin was created to alleviate some of the problems of Android related development.
 
 ## Usage
 The plugin needs to know where your `gradlew` is and it assumes it's at the root of the entire android project.
