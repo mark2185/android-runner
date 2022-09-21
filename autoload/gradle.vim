@@ -1,39 +1,55 @@
-" TODO: cannot process --console plain for some reason
-function! s:createGradleCmd(cmd) abort
-    let l:cmd = [
-            \ g:gradle_bin,
-            \ '-p',
-            \ g:gradle_project_root
-        \]
-    return l:cmd + a:cmd
-endfunction
+vim9script
 
-"if it starts with [a-z], it's a task
-function! gradle#getTasks( arglead, cmdline, cursor_pos ) abort
-    let l:output = systemlist( s:createGradleCmd( ' :app:tasks' )->join() )
-    let l:output = l:output
-                \->filter('!empty(v:val)')
-    " echom 'New: ' . string(l:output)
-    let l:output = l:output
-                \->filter('v:val =~# "^[a-z]"')
-                \->map('v:val->split("-")[0]->trim()')
-                \->map('":app:" . v:val')
+def CreateGradleCmd( cmd: list< string > ): list< string >
+    return [
+        g:gradle_bin,
+        '-p',
+        g:gradle_project_root,
+        g:gradle_flags,
+    ] + cmd
+enddef
 
-    " echom 'New: ' . string(l:output[0])
-    " if a:arglead !~# l:output[0]
-    "     echom "Match!"
-    " endif
+# if it starts with [a-z], it's a task
+# this is used for autocompletion
+export def GetTasks( arglead: string, cmdline: string, cursor_pos: number ): list< string >
+    return systemlist( CreateGradleCmd( [ ':app:tasks' ] )->join() )
+                ->filter( '!empty( v:val )' )
+                ->filter( 'v:val =~# "^[a-z]"' )
+                ->map( 'v:val->split("-")[0]->trim()' )
+                ->map( '":app:" .. v:val' )
+                ->filter( (_, v) => v =~# arglead )
+enddef
 
-    " echom "a:arglead " . a:arglead
-    let l:output = l:output
-                \->filter("a:arglead !~# v:val")
-    return l:output
-endfunction
-
-function! gradle#run( cmd ) abort
+export def Run( ...args: list< string > ): void
     if !executable( g:gradle_bin )
-        echom printf('Gradle binary %s is not found.', g:gradle_bin )
+        echom printf("Gradle binary '%s' is not found.", g:gradle_bin )
+        return
     endif
 
-    call job#run( s:createGradleCmd( a:cmd->split() ) )
-endfunction
+    cexpr CreateGradleCmd( args )
+          ->join()
+          ->systemlist()
+          ->join("\n")
+enddef
+
+export def RunAsync( ...args: list< string > ): void
+    if !executable( g:gradle_bin )
+        echom printf("Gradle binary '%s' is not found.", g:gradle_bin )
+        return
+    endif
+
+    # echom "I got: " .. string(args)
+    job#Run( CreateGradleCmd( args ) )
+enddef
+
+export def Setup( ...args: list< string > ): void
+    # trim '/' from the end
+    const directory        = args[0]->trim( '/', 2 )
+    g:android_project_root = directory
+    g:gradle_project_root  = directory
+    # TODO: validate
+    g:gradle_bin           = g:gradle_project_root .. '/gradlew'
+    g:adb_bin              = $ANDROID_SDK->trim( '/', 2 ) ..  '/platform-tools/adb'
+enddef
+
+defcompile
