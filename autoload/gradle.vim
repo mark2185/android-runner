@@ -4,7 +4,7 @@ def CreateGradleCmd( cmd: list< string > ): list< string >
     return [
         g:gradle_bin,
         '-p',
-        g:gradle_project_root
+        g:gradle_project_root,
         g:gradle_flags,
     ] + cmd
 enddef
@@ -47,6 +47,7 @@ export def Setup( ...args: list< string > ): void
     const directory        = args[0]->trim( '/', 2 )
     g:android_project_root = directory
     g:gradle_project_root  = directory
+    # TODO: validate
     g:gradle_bin           = g:gradle_project_root .. '/gradlew'
     g:adb_bin              = $ANDROID_SDK->trim( '/', 2 ) ..  '/platform-tools/adb'
 enddef

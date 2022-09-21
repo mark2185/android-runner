@@ -52,8 +52,8 @@ enddef
 
 def EvalCmd( cmd: list< string > ): list< string >
     for i in range( len( cmd ) )
-        if cmd[ i ] =~# '%PID%'
-            const pid = string(adb#getPid())
+        if cmd[ i ] =~ '%PID%'
+            const pid = string(adb#GetPid())
             cmd[ i ] = substitute( cmd[ i ], '%PID%', pid, '' )
             echom "PID is " .. pid
             g:android_target_app_pid = str2nr(pid)
@@ -151,7 +151,7 @@ enddef
 
 def ClearQueue(): void
     const queue_length = len( job_queue )
-    if queue_length
+    if queue_length > 0
         echom printf( "Cleaning queue! Dropping %d jobs!", len( job_queue ) )
     endif
     job_queue = []

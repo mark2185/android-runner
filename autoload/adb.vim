@@ -71,7 +71,7 @@ export def Devices( properties: list< string > = [] ): list< dict< string > >
     return result
 enddef
 
-def GetPid( app_name: string = printf( "%s.%s", g:app_pkg, g:android_target_app ) ): number
+export def GetPid( app_name: string = printf( "%s.%s", g:app_pkg, g:android_target_app ) ): number
     if !IsDeviceValid( g:android_target_device )
         echom printf( "Device '%s' not found!", g:android_target_device )
         return -1
