@@ -127,5 +127,5 @@ To clear the logcat press `<leader>c` in the job's buffer.
 
 If you want to input text on a connected android:
 ```
-AdbRun input text "--gtest_filter=TestSuite.TestCase"
+AdbRun shell input text "--gtest_filter=TestSuite.TestCase"
 ```
