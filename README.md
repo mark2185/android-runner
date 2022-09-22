@@ -30,6 +30,7 @@ If not specified, `g:android_target_app` and `g:target_device` are used.
 
 ```vim
 GradleRun           - runs `gradle` commands with `g:gradle_project_root` as current working dir, and `g:gradle_flags` as the flags
+AdbSetPort          - set port (default: `5037`)
 AdbSelectDevice     - select one of the detected devices as your target
 AdbShell            - spawn shell on the target device
 AdbRun              - run a command on the  target device
@@ -45,7 +46,7 @@ AdbShazam           - push, install, start
 AdbDebugger         - push, install, start in debug mode
 ```
 
-Default LLDB server port is `54321`.
+Default `LLDB` server port is `54321`.
 
 ## Using the debugger
 
@@ -57,11 +58,20 @@ Run `:AdbDebugger`
 
 Run `jdb -attach localhost:54321` in a separate terminal. (I know, I know, I'll remove this step later)
 
+Note: if you want to preset the GradleSetup so you don't have to invoke it, this is GradleSetup in a nutshell:
+```vim
+def Setup( dir: string )
+    g:android_project_root = dir
+    g:gradle_project_root  = dir
+    g:gradle_bin           = dir .. '/gradlew'
+    g:adb_bin              = $ANDROID_SDK .. '/platform-tools/adb'
+```
+
 ### 2. Launch Vimspector
 
 Here's the config:
 
-```
+```json
 {
     "configurations": {
         "AndroidTest": {
@@ -93,6 +103,9 @@ Here's the config:
                     "platform select remote-android",
                     "platform connect connect://localhost:54321"
                 ],
+                "environment": {
+                    "ANDROID_ADB_SERVER_PORT": "5038" // this is NECESSARY if the port is non-default (i.e. not 5037)
+                },
                 "pid": "${pid}",
                 "request": "attach"
             }
@@ -114,6 +127,7 @@ g:android_project_root  - path to the android project root
 g:gradle_bin            - path to gradlew
 g:gradle_project_root   - dirname of g:gradle_bin
 g:adb_bin               - path to adb, defaults to $ANDROID_SDK/platform-tools/adb
+g:adb_port              - port for adb to use, defaults to 5037
 g:gradle_flags          - flags that are injected into gradle invocations, default to `-p`
 ```
 

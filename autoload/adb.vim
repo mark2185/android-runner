@@ -101,7 +101,7 @@ export def GetPid( app_name: string = printf( "%s.%s", g:app_pkg, g:android_targ
         "| cut -d' ' -f2",
     ]
 
-    # echom "Checking pidof: " .. app_name
+    echom "Checking pidof: " .. app_name
     return CreateAdbCmd( cmd )
            ->join()
            ->systemlist()
@@ -460,19 +460,30 @@ enddef
 
 # this requires running AdbShazam first
 export def LaunchDebugger(): void
+    if empty(g:android_lldb_armv7_server_bin) && empty(g:android_lldb_armv8_server_bin)
+        echom "g:android_lldb_armv{7,8}server_bin is empty! Not pushing lldb-server!"
+    else
+        # push lldb-server
+        # TODO: only if necessary
 
-    # push lldb-server
-    # TODO: only if necessary
-    # job#AddToQueue( CreateAdbCmd( [ 'push', g:android_lldb_server_bin, '/data/local/tmp/lldb-server' ] ) )
+        const abi = GetDeviceInfo( ['abi'] )['abi']
+        var android_lldb_server = ''
+        if abi == 'armeabi-v7a'
+            android_lldb_server = g:android_lldb_armv7_server_bin
+        else
+            android_lldb_server = g:android_lldb_armv8_server_bin
+        endif
+        job#AddToQueue( CreateAdbCmd( [ 'push', android_lldb_server, '/data/local/tmp/lldb-server' ] ) )
 
-    # copy to root of app
-    # job#AddToQueue( CreateAdbCmd( [
-    #     'shell',
-    #     'run-as',
-    #     'com.microblink.exerunner.' .. g:android_target_app,
-    #     'cp',
-    #     '/data/local/tmp/lldb-server',
-    #     '.' ] ) )
+        # copy to root of app
+        job#AddToQueue( CreateAdbCmd( [
+            'shell',
+            'run-as',
+            'com.microblink.exerunner.' .. g:android_target_app,
+            'cp',
+            '/data/local/tmp/lldb-server',
+            '.' ] ) )
+    endif
 
     # start app in Debug mode
     job#AddToQueue( CreateAdbCmd( [
@@ -495,66 +506,65 @@ export def LaunchDebugger(): void
     job#ProcessQueue()
 enddef
 
-export def StartAppDebug(
-     app_name: any  = <string>g:android_target_app,
-     package_path   = 'com.microblink.exerunner',
-     activity_class = 'com.microblink.exerunner.RunActivity'
-    ): void
-
-    if !IsDeviceValid( g:android_target_device )
-        echom printf( "Device '%s' not found!", g:android_target_device )
-        return
-    endif
-
-    # push
-    const src = printf( '%s/app/build/outputs/apk/debug/app-debug.apk', g:android_project_root )
-    const dst = printf( '/data/local/tmp/%s.%s', g:app_pkg, app_name )
-
-    call Push( src, dst )
-
-    if v:shell_error | echom "Shell returned error!" | botright copen | return | endif
-
-    # install
-    const app_apk = printf('/data/local/tmp/%s.%s', g:app_pkg, app_name )
-
-    call Install( app_apk )
-
-    var cmd = CreateAdbCmd( [
-        'shell',
-        'am',
-        'start',
-        '-D',
-        printf( '%s.%s/%s', package_path, app_name, activity_class ),
-        '-a',
-        'android.intent.action.MAIN',
-        '-c',
-        'android.intent.category.LAUNCHER'
-    ] )
-
-    ExecuteSync( cmd )
-    # call job#Run( cmd )
-
-    # TODO: don't guesstimate
-    sleep 2
-
-    const app_pid = string( GetPid( [ package_path, app_name ]->join('.') ) )
-    cmd = CreateAdbCmd( [
-        'forward',
-        'tcp:54321',
-        'jdwp:' .. app_pid
-    ] )
-
-    # TODO: this is broken: https://github.com/vim/vim/issues/8926
-    # call Run( cmd )
-    ExecuteSync( cmd )
-
-    # TODO: don't guesstimate
-    sleep 3
-
-    botright cexpr ExecuteSync( [ 'jdb', '-attach', 'localhost:54321', '&' ] )
-    echom "Pid is: " .. app_pid .. ", it's stored in the register p"
-    setreg( 'p', app_pid )
-enddef
+# TODO: under construction
+#export def StartAppDebug(
+#     app_name: any  = <string>g:android_target_app,
+#     package_path   = 'com.microblink.exerunner',
+#     activity_class = 'com.microblink.exerunner.RunActivity'
+#    ): void
+#
+#    if !IsDeviceValid( g:android_target_device )
+#        echom printf( "Device '%s' not found!", g:android_target_device )
+#        return
+#    endif
+#
+#    # push
+#    const src = printf( '%s/app/build/outputs/apk/debug/app-debug.apk', g:android_project_root )
+#    const dst = printf( '/data/local/tmp/%s.%s', g:app_pkg, app_name )
+#
+#    call Push( src, dst )
+#
+#    if v:shell_error | echom "Shell returned error!" | botright copen | return | endif
+#
+#    # install
+#    const app_apk = printf('/data/local/tmp/%s.%s', g:app_pkg, app_name )
+#
+#    call Install( app_apk )
+#
+#    var cmd = CreateAdbCmd( [
+#        'shell',
+#        'am',
+#        'start',
+#        '-D',
+#        printf( '%s.%s/%s', package_path, app_name, activity_class ),
+#        '-a',
+#        'android.intent.action.MAIN',
+#        '-c',
+#        'android.intent.category.LAUNCHER'
+#    ] )
+#
+#    ExecuteSync( cmd )
+#    # call job#Run( cmd )
+#
+#    # TODO: don't guesstimate
+#    sleep 2
+#
+#    const app_pid = string( GetPid( [ package_path, app_name ]->join('.') ) )
+#    cmd = CreateAdbCmd( [
+#        'forward',
+#        'tcp:54321',
+#        'jdwp:' .. app_pid
+#    ] )
+#
+#    ExecuteSync( cmd )
+#
+#    # TODO: don't guesstimate
+#    sleep 3
+#
+#    botright cexpr ExecuteSync( [ 'jdb', '-attach', 'localhost:54321', '&' ] )
+#    echom "Pid is: " .. app_pid .. ", it's stored in the register p"
+#    setreg( 'p', app_pid )
+#enddef
 
 export def StopLLDB( target_device: any = g:android_target_device )
     var cmd = CreateAdbCmd( [

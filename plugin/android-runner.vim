@@ -29,8 +29,8 @@ g:gradle_project_root    = get( g:, 'gradle_project_root', g:android_project_roo
 g:gradle_flags           = get( g:, 'gradle_flags', '-P android.native.buildOutput=verbose' )
 g:android_disable_pidcat = get( g:, 'android_disable_pidcat', v:false )
 
-g:android_lldb_server_bin = get( g:, 'android_lldb_server_bin', '' )
-
+g:android_lldb_armv8_server_bin = get( g:, 'android_lldb_armv8_server_bin', '' )
+g:android_lldb_armv7_server_bin = get( g:, 'android_lldb_armv7_server_bin', '' )
 
 # TODO: command for killing app on device
 
