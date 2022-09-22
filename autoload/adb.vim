@@ -16,6 +16,10 @@ var timer_id = -1
 
 const g:app_pkg = 'com.microblink.exerunner'
 
+export def SetPort( port: string )
+    g:adb_port = str2nr(port)
+enddef
+
 def ExecuteSync( cmd: list< string > ): string
     return cmd
            ->join()
@@ -27,7 +31,9 @@ def CreateAdbCmd( cmd: list< string >, device: string = <string>g:android_target
     return [
         g:adb_bin,
         '-s',
-        device
+        device,
+        '-P',
+        string(g:adb_port)
     ] + cmd
 enddef
 
@@ -36,6 +42,7 @@ def GetProperty( property: string, device: string = <string> g:android_target_de
            ->join()
            ->systemlist()
            ->join()
+           ->trim()
 enddef
 
 def GetDeviceInfo( properties: list<string> = ['sdk', 'version', 'model'], device: string = <string> g:android_target_device ): dict< string >
@@ -57,7 +64,7 @@ export def Devices( properties: list< string > = [] ): list< dict< string > >
         echom 'g:adb_bin not set!'
         return []
     endif
-    const devices = systemlist( g:adb_bin .. ' devices' )
+    const devices = systemlist( printf( "%s -P %d devices", g:adb_bin, g:adb_port ) )
             ->filter( '!empty( v:val )' )
             ->map( 'v:val->matchstr(''\v^(.+)\s+device$'')' )
             ->filter( '!empty(v:val)' )
@@ -77,10 +84,21 @@ export def GetPid( app_name: string = printf( "%s.%s", g:app_pkg, g:android_targ
         return -1
     endif
 
+    # TODO: only works for newer androids ( >= 7, I guess, haven't bisected)
+    # const cmd = [
+    #     'shell',
+    #     'pidof',
+    #     '-s',
+    #     app_name
+    # ]
+
+    # waterproof solution
     const cmd = [
         'shell',
-        'pidof',
-        app_name
+        'ps',
+        printf('| egrep "\b%s\b"', app_name),
+        "| tr -s ' '",
+        "| cut -d' ' -f2",
     ]
 
     # echom "Checking pidof: " .. app_name
@@ -299,7 +317,7 @@ enddef
 #
 
 export def Restart(): void
-    call job#Run( [ printf( '%s kill-server && %s start-server', g:adb_bin, g:adb_bin ) ] )
+    call job#Run( [ printf( '%s -P %d kill-server && %s -P %d start-server', g:adb_bin, g:adb_port, g:adb_bin, g:adb_port ) ] )
 enddef
 
 export def Shazam(
@@ -466,11 +484,11 @@ export def LaunchDebugger(): void
 
     # necessary for the app to start up
     # TODO: don't guesstimate
-    job#AddToQueue( [ 'sleep', '2' ] )
+    job#AddToQueue( [ 'sleep', '4' ] )
 
     job#AddToQueue( CreateAdbCmd( [
         'forward',
-        'tcp:54321',
+        'tcp:' .. string(g:jdb_port),
         'jdwp:%PID%'
     ] ) )
 
@@ -575,7 +593,7 @@ export def RunAsync( ...args: list< string > ): void
         echom printf( "adb binary '%s' is not found.", g:adb_bin )
     endif
 
-    call job#Run( [ g:adb_bin ] + args )
+    call job#Run( [ printf( "%s -P %d", g:adb_bin, g:adb_port ) ] + args )
 enddef
 
 export def Run( ...args: list< string > ): void
@@ -583,7 +601,7 @@ export def Run( ...args: list< string > ): void
         echom printf( "adb binary '%s' is not found.", g:adb_bin )
     endif
 
-    const cmd = [ g:adb_bin ] + args
+    const cmd = [ printf( "%s -P %d", g:adb_bin, g:adb_port ) ] + args
 
     setqflist( [], 'r' )
     cexpr ExecuteSync( cmd )

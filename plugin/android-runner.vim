@@ -17,12 +17,14 @@ endif
 # TODO: term#run
 # TODO: config file for variables
 
+g:adb_port               = get( g:, 'adb_port', 5037  )
+g:jdb_port               = get( g:, 'jdb_port', 54321 )
 g:adb_bin                = get( g:, 'adb_bin',               systemlist('which adb')[0] )
 g:android_target_device  = get( g:, 'android_target_device', '' )
 g:android_target_app     = get( g:, 'android_target_app',    '' )
 g:android_project_root   = get( g:, 'android_project_root',  '' )
 
-g:gradle_bin             = get( g:, 'gradle_bin',         g:android_project_root .. '/gradlew' )
+g:gradle_bin             = get( g:, 'gradle_bin',          g:android_project_root .. '/gradlew' )
 g:gradle_project_root    = get( g:, 'gradle_project_root', g:android_project_root )
 g:gradle_flags           = get( g:, 'gradle_flags', '-P android.native.buildOutput=verbose' )
 g:android_disable_pidcat = get( g:, 'android_disable_pidcat', v:false )
@@ -47,7 +49,8 @@ command! -nargs=? AdbStartLLDB  call adb#StartLLDB(<f-args>)
 command! -nargs=? AdbStartDebug call adb#StartAppDebug(<f-args>)
 command! -nargs=? AdbStopLLDB   call adb#StopLLDB(<f-args>)
 command! -nargs=1 -complete=customlist,adb#CompleteBuildType AdbSelectBuildType call adb#SelectBuildType(<f-args>)
-command! -nargs=* AdbInputText call adb#InputText(<f-args>)
+command! -nargs=*                                            AdbInputText       call adb#InputText(<f-args>)
+command! -nargs=1                                            AdbSetPort         call adb#SetPort(<f-args>)
 #command! -nargs=+ -complete=file                             AdbPush            call adb#Push(<f-args>)
 #command! -nargs=1 -complete=dir                              AdbChangeAndroidProjectRoot call adb#SetAndroidProjectRoot(<f-args>)
 

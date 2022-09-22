@@ -42,9 +42,9 @@ export def RunAsync( ...args: list< string > ): void
     job#Run( CreateGradleCmd( args ) )
 enddef
 
-export def Setup( ...args: list< string > ): void
+export def Setup( dir: string ): void
     # trim '/' from the end
-    const directory        = args[0]->trim( '/', 2 )
+    const directory        = dir->trim( '/', 2 )
     g:android_project_root = directory
     g:gradle_project_root  = directory
     # TODO: validate

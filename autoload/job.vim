@@ -98,7 +98,7 @@ def CloseCallback( channel: channel ): void
     # Remove android job
     android_job = {}
 
-    cwindow
+    copen
 enddef
 
 export def Stop(): void
