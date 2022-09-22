@@ -101,7 +101,7 @@ export def GetPid( app_name: string = printf( "%s.%s", g:app_pkg, g:android_targ
         "| cut -d' ' -f2",
     ]
 
-    echom "Checking pidof: " .. app_name
+    # echom "Checking pidof: " .. app_name
     return CreateAdbCmd( cmd )
            ->join()
            ->systemlist()
@@ -299,7 +299,11 @@ export def GetLogcatOutput( app_name: string = 'com.microblink.exerunner.' .. g:
     endif
 
     # TODO: check if pidcat exists and use that
-    job#Run( CreateAdbCmd( [ 'logcat', '--pid', string( GetPid( app_name ) ) ] ) )
+    var cat_cmd = 'logcat'
+    if g:adb_use_pidcat
+        cat_cmd = 'pidcat'
+    endif
+    job#Run( CreateAdbCmd( [ cat_cmd, '--pid', string( GetPid( app_name ) ) ] ) )
 enddef
 #
 #function! GetPidcatOutput( app_name = 'com.microblink.exerunner.' . g:android_target_app ) abort
@@ -481,6 +485,7 @@ export def LaunchDebugger(): void
             'run-as',
             'com.microblink.exerunner.' .. g:android_target_app,
             'cp',
+            '-f',
             '/data/local/tmp/lldb-server',
             '.' ] ) )
     endif

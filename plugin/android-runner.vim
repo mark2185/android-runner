@@ -19,7 +19,8 @@ endif
 
 g:adb_port               = get( g:, 'adb_port', 5037  )
 g:jdb_port               = get( g:, 'jdb_port', 54321 )
-g:adb_bin                = get( g:, 'adb_bin',               systemlist('which adb')[0] )
+g:adb_bin                = get( g:, 'adb_bin', systemlist('which adb')[0] )
+g:adb_use_pidcat         = get( g:, 'adb_use_pidcat', 0 )
 g:android_target_device  = get( g:, 'android_target_device', '' )
 g:android_target_app     = get( g:, 'android_target_app',    '' )
 g:android_project_root   = get( g:, 'android_project_root',  '' )
