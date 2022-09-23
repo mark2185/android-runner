@@ -142,14 +142,16 @@ Note: `${androidDevice}` and `${pid}` are in the `g:android_target_device` and `
 Variables:
 
 ```vim
-g:android_target_device - ID of the target device
-g:android_target_app    - name of the target app
-g:android_project_root  - path to the android project root
-g:gradle_bin            - path to gradlew
-g:gradle_project_root   - dirname of g:gradle_bin
-g:adb_bin               - path to adb, defaults to $ANDROID_SDK/platform-tools/adb
-g:adb_port              - port for adb to use, defaults to 5037
-g:gradle_flags          - flags that are injected into gradle invocations, default to `-p`
+g:android_target_device         - ID of the target device
+g:android_target_app            - name of the target app
+g:android_project_root          - path to the android project root
+g:android_lldb_armv8_server_bin - path to the armv8 version of lldb-server
+g:android_lldb_armv7_server_bin - path to the armv7 version of lldb-server
+g:gradle_bin                    - path to gradlew
+g:gradle_project_root           - dirname of g:gradle_bin
+g:adb_bin                       - path to adb, defaults to $ANDROID_SDK/platform-tools/adb
+g:adb_port                      - port for adb to use, defaults to 5037
+g:gradle_flags                  - flags that are injected into gradle invocations, default to `-p`
 ```
 
 ## Bonus
