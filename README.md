@@ -50,6 +50,20 @@ Default `LLDB` server port is `54321`.
 
 ## Using the debugger
 
+### 0. Pre-setup
+
+Be sure to set the following variables so that the correct `lldb-server` can be pushed to the device:
+```vim
+g:android_lldb_armv8_server_bin
+g:android_lldb_armv7_server_bin
+```
+
+If you're using the portable version of AS, downloaded straight from its site, the servers should be in these directories:
+```
+$> ls android-studio/plugins/android-ndk/resources/lldb/android/
+arm64-v8a armeabi x86 x86_64
+```
+
 ### 1. Setup
 
 Run `:GradleSetup /path/to/android/project`.
