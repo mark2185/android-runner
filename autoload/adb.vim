@@ -2,14 +2,14 @@ vim9script
 
 const android_properties = {
     SDK:          'ro.build.version.sdk',
-    version:      'ro.build.version.release',
+    abi:          'ro.product.cpu.abi',
     brand:        'ro.product.brand',
-    model:        'ro.product.model',
     manufacturer: 'ro.product.manufacturer',
+    model:        'ro.product.model',
+    version:      'ro.build.version.release',
     country:      'persist.sys.country',
     language:     'persist.sys.language',
     timezone:     'persist.sys.timezone',
-    abi:          'ro.product.cpu.abi',
 }
 
 var timer_id = -1
@@ -174,16 +174,23 @@ export def PushAsync(
     call job#Run( CreateAdbCmd( [ 'push', src, dst ] ) )
 enddef
 
-# TODO: inputlist may be friendlier() ?
 export def SelectDevice( device: string = '' ): void
     if !empty( device )
         g:android_target_device = device
     else
-        const devices = Devices( ['device'] )
+        const devices = Devices( [ 'device', 'brand', 'manufacturer', 'model' ])
         if len( devices ) == 1
             g:android_target_device = devices[ 0 ][ 'device' ]
         else
-            # inputlist ?
+            const usr_input: number = inputlist(
+            [ 'Which device do you wish to select?' ]
+            + deepcopy( devices )
+            -> map( ( i, d ) => printf( '%d: %s (%s %s)', i + 1, d['device'], d['manufacturer'], d['model'] ) ) )
+            if usr_input == 0 || usr_input == -1
+                return
+            endif
+            const device_index: number = usr_input - 1
+            g:android_target_device = devices[ device_index ][ 'device' ]
         endif
     endif
 enddef

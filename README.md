@@ -73,8 +73,7 @@ Run `:GradleRun :app:assembleDebug` or any other `gradle` command you need.
 Set `g:android_target_app` to the final app name, e.g. `CoreUtilsTest`.
 
 If you have only one android device connected, it'll be used for running the `adb` commands.
-But if you have more than one, please set the `g:android_target_device` to its ID.
-You can get the list of IDs via `:AdbDevices`
+But if you have more than one, please set the ID through `:AdbSelectDevice`.
 
 Run `:AdbDebugger`
 
