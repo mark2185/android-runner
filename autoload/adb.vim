@@ -177,22 +177,31 @@ enddef
 export def SelectDevice( device: string = '' ): void
     if !empty( device )
         g:android_target_device = device
+        return
+    endif
+
+    const devices = Devices( [ 'device', 'brand', 'manufacturer', 'model' ])
+    if empty( devices )
+        echom "No devices detected"
+        return
+    endif
+
+    if len( devices ) == 1
+        g:android_target_device = devices[ 0 ][ 'device' ]
     else
-        const devices = Devices( [ 'device', 'brand', 'manufacturer', 'model' ])
-        if len( devices ) == 1
-            g:android_target_device = devices[ 0 ][ 'device' ]
-        else
-            const usr_input: number = inputlist(
+        const usr_input: number = inputlist(
             [ 'Which device do you wish to select?' ]
             + deepcopy( devices )
             -> map( ( i, d ) => printf( '%d: %s (%s %s)', i + 1, d['device'], d['manufacturer'], d['model'] ) ) )
-            if usr_input == 0 || usr_input == -1
-                return
-            endif
-            const device_index: number = usr_input - 1
-            g:android_target_device = devices[ device_index ][ 'device' ]
+
+        if usr_input == 0 || usr_input == -1
+            return
         endif
+
+        const device_index: number = usr_input - 1
+        g:android_target_device = devices[ device_index ][ 'device' ]
     endif
+    echom 'Set target device to ' .. g:android_target_device
 enddef
 
 #let s:build_type_name = 'distribute'
