@@ -46,8 +46,17 @@ def CreateQuickFix(): void
     # just to be sure all messages were processed
     sleep 100m
 
+    setbufvar( job_bufid, "&modifiable", 1 )
+    deletebufline( job_bufid, 1)
+    setbufvar( job_bufid, "&modifiable", 0 )
     execute 'botright cgetbuffer ' .. job_bufid
     silent setqflist( [], 'a', { 'title': android_job[ 'cmd' ]->join() } )
+enddef
+
+def AppendToJobBuffer( content: string ): void
+    setbufvar( job_bufid, "&modifiable", 1 )
+    appendbufline( job_bufid, "$", content)
+    setbufvar( job_bufid, "&modifiable", 0 )
 enddef
 
 def EvalCmd( cmd: list< string > ): list< string >
@@ -55,7 +64,7 @@ def EvalCmd( cmd: list< string > ): list< string >
         if cmd[ i ] =~ '%PID%'
             const pid = string(adb#GetPid())
             cmd[ i ] = substitute( cmd[ i ], '%PID%', pid, '' )
-            echom "PID is " .. pid
+            AppendToJobBuffer( "--> PID is " .. pid )
             g:android_target_app_pid = str2nr(pid)
         endif
     endfor
@@ -63,6 +72,8 @@ def EvalCmd( cmd: list< string > ): list< string >
 enddef
 
 def StartJob( cmd: list< string >, buffer_id: number = job_bufid ): void
+    AppendToJobBuffer( "Running:" )
+    AppendToJobBuffer( "\t" .. cmd->join() )
     android_job = {
         cmd: cmd,
         job: job_start( EvalCmd(cmd), {
