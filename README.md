@@ -1,5 +1,5 @@
 # android-runner
-Run gradle and android related stuff
+Run `gradle` and android related stuff
 
 Android Studio craves more gigabytes of RAM that I am willing to buy so this plugin was created to alleviate some of the problems of Android related development.
 
@@ -108,7 +108,9 @@ Here's the config:
                     "remote": {
                         "host": "localhost",
                         "runCommand": [
-                            "adb", "-s", "${androidDevice}",
+                            "adb",
+                            "-P", "${adbPort:5037}",
+                            "-s", "${androidDevice}",
                             "shell", "run-as",
                             "com.microblink.exerunner.${AndroidAppName}",
                             "./lldb-server",
@@ -125,7 +127,7 @@ Here's the config:
                     "platform connect connect://localhost:54321"
                 ],
                 "environment": {
-                    "ANDROID_ADB_SERVER_PORT": "5038" // this is NECESSARY if the port is non-default (i.e. not 5037)
+                    "ANDROID_ADB_SERVER_PORT": "${adbPort:5037}" // this is NECESSARY if the port is non-default (i.e. not 5037)
                 },
                 "pid": "${pid}",
                 "request": "attach"
