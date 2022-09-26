@@ -73,7 +73,7 @@ enddef
 
 def StartJob( cmd: list< string >, buffer_id: number = job_bufid ): void
     AppendToJobBuffer( "Running:" )
-    AppendToJobBuffer( "\t" .. cmd->join() )
+    AppendToJobBuffer( " > " .. cmd->join() )
     android_job = {
         cmd: cmd,
         job: job_start( EvalCmd(cmd), {
