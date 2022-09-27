@@ -78,22 +78,12 @@ enddef
 # }}}
 
 export def Restart(): void
-    if !executable( g:adb_bin )
-        echom printf( "adb binary '%s' is not found.", g:adb_bin )
-        return
-    endif
-
     ExecuteSync( CreateAdbCmd( [ 'kill-server'  ] ) )
     ExecuteSync( CreateAdbCmd( [ 'start-server' ] ) )
     echon "ADB restarted on port " .. g:adb_port
 enddef
 
 export def Devices( properties: list< string > = [] ): list< dict< string > >
-    if !executable( g:adb_bin )
-        echom printf( "adb binary '%s' is not found.", g:adb_bin )
-        return []
-    endif
-
     const devices = ExecuteSync( CreateAdbCmd( [ 'devices' ] ) )
             ->filter( '!empty( v:val )' )                      # remove empty lines
             ->filter( 'v:val[0] != "*"' )                      # e.g. "* daemon starting"
@@ -112,8 +102,8 @@ export def SetPort( port: string )
 enddef
 
 export def GetPid( app_name: string = printf( "%s.%s", g:app_pkg, g:android_target_app ) ): number
-    if !IsDeviceValid( g:android_target_device )
-        echom printf( "Device '%s' not found!", g:android_target_device )
+    if !SelectDevice()
+        echom "No devices found"
         return -1
     endif
 
@@ -139,21 +129,9 @@ export def GetPid( app_name: string = printf( "%s.%s", g:app_pkg, g:android_targ
 enddef
 
 export def Shell(): void
-    if !executable( g:adb_bin )
-        echom printf( "adb binary '%s' is not found.", g:adb_bin )
+    if !SelectDevice()
+        echom "No devices found"
         return
-    endif
-
-    if !IsDeviceValid( g:android_target_device )
-        if !empty( g:android_target_device )
-            echom printf("Device '%s' not valid!", g:android_target_device)
-            return
-        endif
-
-        SelectDevice()
-        if empty(g:android_target_device)
-            return
-        endif
     endif
 
     const shellCmd = CreateAdbCmd( [ 'shell' ], g:android_target_device )
@@ -162,52 +140,54 @@ export def Shell(): void
     execute 'botright term ++close ++rows=20 ' .. shellCmd->join()
 enddef
 
-export def SelectDevice( device: string = '' ): void
-    if !executable( g:adb_bin )
-        echom printf( "adb binary '%s' is not found.", g:adb_bin )
-        return
-    endif
-
-    if !empty( device )
+# if there's only one device, select that one
+# if there are multiple, bring up a menu
+# returns true on successful selection
+export def SelectDevice( device: string = '' ): bool
+    if empty(device)
+        if IsDeviceValid( g:android_target_device )
+            return true
+        endif
+    else
         if IsDeviceValid( device )
             g:android_target_device = device
-            echon 'Set target device to ' .. g:android_target_device
-            return
+            return true
         else
-            echon printf("Device '%s' is not valid!", device )
-            return
+            echom printf("Device '%s' is not valid!", device )
+            return false
         endif
     endif
 
     const allDevices = Devices( [ 'device', 'brand', 'manufacturer', 'model' ] )
     if empty( allDevices )
         echom "No devices detected"
-        return
+        return false
     endif
 
     if len( allDevices ) == 1
         g:android_target_device = allDevices[ 0 ][ 'device' ]
-    else
-        const usr_input: number = inputlist(
-            [ 'Which device do you wish to select?' ]
-            + deepcopy( allDevices )
-            -> map( ( i, d ) => printf( '%d: %s (%s %s)', i + 1, d['device'], d['manufacturer'], d['model'] ) ) )
-
-        if usr_input == 0 || usr_input == -1
-            return
-        endif
-
-        const device_index: number = usr_input - 1
-        g:android_target_device = allDevices[ device_index ][ 'device' ]
+        return true
     endif
-    echon 'Set target device to ' .. g:android_target_device
+
+    const usr_input: number = inputlist(
+        [ 'Which device do you wish to select?' ]
+        + deepcopy( allDevices )
+        -> map( ( i, d ) => printf( '%d: %s (%s %s)', i + 1, d['device'], d['manufacturer'], d['model'] ) ) )
+
+    if usr_input == 0 || usr_input == -1
+        return false
+    endif
+
+    const device_index: number = usr_input - 1
+    g:android_target_device = allDevices[ device_index ][ 'device' ]
+    return true
 enddef
 
 # TODO: gradle should have :app:install{Debug,Release,Distribute}
 export def Install( src: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ) ): string
-    if !IsDeviceValid( g:android_target_device )
-        echom printf("Device '%s' not valid!", g:android_target_device)
-        return 'Device not valid'
+    if !SelectDevice()
+        echom 'No devices found'
+        return 'error installing'
     endif
 
     return ExecuteSync( CreateAdbCmd( [ 'shell', 'pm', 'install', '-t', '-r', src ] ) )->join("\n")
@@ -215,8 +195,8 @@ enddef
 
 # TODO: gradle should have this
 export def InstallAsync( src: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ) ): void
-    if !IsDeviceValid( g:android_target_device )
-        echom 'Device not found!'
+    if !SelectDevice()
+        echom 'No devices found'
         return
     endif
 
@@ -238,11 +218,9 @@ export def Push(
       dst: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ),
     ): void
 
-    if !IsDeviceValid( g:android_target_device )
-        SelectDevice()
-        if empty(g:android_target_device)
-            return
-        endif
+    if !SelectDevice()
+        echom 'No devices found'
+        return
     endif
 
     if empty( g:android_project_root )
@@ -259,8 +237,8 @@ export def PushAsync(
       dst: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ),
      ): void
 
-    if !IsDeviceValid( g:android_target_device )
-        echom 'Device not found!'
+    if !SelectDevice()
+        echom 'No devices found'
         return
     endif
 
@@ -298,8 +276,8 @@ export def StartAsync(
      package_path:   string = 'com.microblink.exerunner',
      activity_class: string = 'com.microblink.exerunner.RunActivity' ): void
 
-    if !IsDeviceValid( g:android_target_device )
-        echom 'Device not found!'
+    if !SelectDevice()
+        echom 'No devices found'
         return
     endif
 
@@ -315,23 +293,15 @@ export def StartAsync(
 enddef
 
 export def LogcatClear(): void
-    const logcatClearCmd = CreateAdbCmd( [ 'logcat', '-c' ], g:android_target_device )
+    const logcatClearCmd = CreateAdbCmd( [ 'logcat', '-b', 'all', '-c' ], g:android_target_device )
     ExecuteSync( logcatClearCmd )
 enddef
 
 # TODO: in a separate buffer so it doesn't interefere with jobs
 export def GetLogcatOutput( app_name: string = 'com.microblink.exerunner.' .. g:android_target_app ): void
-    if !executable( g:adb_bin )
-        echom printf( "adb binary '%s' is not found.", g:adb_bin )
+    if !SelectDevice()
+        echom 'No devices found'
         return
-    endif
-
-    if !IsDeviceValid( g:android_target_device )
-        echom printf("Device '%s' is not valid!", g:android_target_device )
-        SelectDevice()
-        if empty(g:android_target_device)
-            return
-        endif
     endif
 
     if GetPid( app_name ) == -1
@@ -361,12 +331,9 @@ export def Shazam(
         return
     endif
 
-    if !IsDeviceValid( g:android_target_device )
-        echom printf("Device '%s' is not valid!", g:android_target_device )
-        SelectDevice()
-        if empty(g:android_target_device)
-            return
-        endif
+    if !SelectDevice()
+        echom 'No devices found'
+        return
     endif
 
     # push
@@ -420,12 +387,9 @@ export def LaunchDebugger(): void
         return
     endif
 
-    if !IsDeviceValid( g:android_target_device )
-        echom printf("Device '%s' is not valid!", g:android_target_device )
-        SelectDevice()
-        if empty(g:android_target_device)
-            return
-        endif
+    if !SelectDevice()
+        echom 'No devices found'
+        return
     endif
 
     if empty(g:android_lldb_armv7_server_bin) && empty(g:android_lldb_armv8_server_bin)
@@ -502,18 +466,10 @@ export def StopLLDB( target_device: any = g:android_target_device )
 enddef
 
 export def RunAsync( ...args: list< string > ): void
-    if !executable( g:adb_bin )
-        echom printf( "adb binary '%s' is not found.", g:adb_bin )
-    endif
-
     call job#Run( [ printf( "%s -P %d", g:adb_bin, g:adb_port ) ] + args )
 enddef
 
 export def Run( ...args: list< string > ): void
-    if !executable( g:adb_bin )
-        echom printf( "adb binary '%s' is not found.", g:adb_bin )
-    endif
-
     const cmd = [ printf( "%s -P %d", g:adb_bin, g:adb_port ) ] + args
 
     setqflist( [], 'r' )
@@ -523,15 +479,9 @@ export def Run( ...args: list< string > ): void
 enddef
 
 export def InputText( ...args: list< string > ): void
-    if !executable( g:adb_bin )
-        echom printf( "adb binary '%s' is not found.", g:adb_bin )
-    endif
-
-    if !IsDeviceValid( g:android_target_device )
-        SelectDevice()
-        if empty(g:android_target_device)
-            return
-        endif
+    if !SelectDevice()
+        echom 'No devices found'
+        return
     endif
 
     ExecuteSync( CreateAdbCmd( [ 'shell', 'input', 'text' ] + args, g:android_target_device ) )
