@@ -93,7 +93,7 @@ def CloseCallback( channel: channel ): void
     echon android_job[ 'cmd' ]->join() .. "\n"
     if exitval == 0
         if len( job_queue ) >= 1
-            echom "Callback: exitval 0, remaining jobs: " .. len( job_queue )
+            # echom "Callback: exitval 0, remaining jobs: " .. len( job_queue )
             var job = remove( job_queue, 0 )
             StartJob( job )
             return
@@ -152,7 +152,7 @@ export def ProcessQueue(): void
     endif
 
     var job = remove( job_queue, 0 )
-    echom "Processing queue, remaining jobs: " .. len( job_queue )
+    # echom "Processing queue, remaining jobs: " .. len( job_queue )
     Run( job )
 enddef
 

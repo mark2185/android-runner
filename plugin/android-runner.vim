@@ -17,8 +17,9 @@ endif
 # TODO: term#run
 # TODO: config file for variables
 
-g:adb_port               = get( g:, 'adb_port', 5037  )
+g:adb_port               = get( g:, 'adb_port', '5037'  )
 g:jdb_port               = get( g:, 'jdb_port', 54321 )
+# TODO: check if there is no adb
 g:adb_bin                = get( g:, 'adb_bin', systemlist('which adb')[0] )
 g:adb_use_pidcat         = get( g:, 'adb_use_pidcat', 0 )
 g:android_target_device  = get( g:, 'android_target_device', '' )
@@ -38,10 +39,11 @@ g:android_lldb_armv7_server_bin = get( g:, 'android_lldb_armv7_server_bin', '' )
 command! -nargs=1 -complete=dir                              GradleSetup        call gradle#Setup(<f-args>)
 command! -nargs=* -complete=customlist,gradle#GetTasks       GradleRun          call gradle#RunAsync(<f-args>)
 
-command! -nargs=?                                            AdbShell           call adb#Shell(<f-args>)
-command! -nargs=?                                            AdbSelectDevice    call adb#SelectDevice(<f-args>)
-command! -nargs=*                                            AdbRun             call adb#Run(<f-args>)
-command! -nargs=0                                            AdbDevices         echom adb#Devices()
+command! -nargs=0    AdbRestart call adb#Restart()
+command! -nargs=0    AdbShell           call adb#Shell()
+command! -nargs=?    AdbSelectDevice    call adb#SelectDevice(<f-args>)
+command! -nargs=*    AdbRun             call adb#Run(<f-args>)
+command! -nargs=0    AdbDevices         echom adb#Devices()
 #command! -nargs=?                                            AdbInstall         call adb#InstallApp(<f-args>)
 #command! -nargs=?                                            AdbStart           call adb#StartApp(<f-args>)
 command! -nargs=?                                            AdbLogcat          call adb#GetLogcatOutput(<f-args>)
