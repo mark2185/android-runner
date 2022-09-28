@@ -37,6 +37,7 @@ if empty( g:adb_bin )
 endif
 
 g:adb_use_pidcat         = get( g:, 'adb_use_pidcat', 0 )
+# TODO: test all functions where g:android_target_device is set to something invalid
 g:android_target_device  = get( g:, 'android_target_device', '' )
 g:android_target_app     = get( g:, 'android_target_app',    '' )
 g:android_project_root   = get( g:, 'android_project_root',  '' )

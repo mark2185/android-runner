@@ -40,8 +40,8 @@ def CreateAdbCmd( cmd: list< string >, deviceSerial: string = '' ): list< string
     return finalCommand + cmd
 enddef
 
-def GetProperty( property: string ): string
-    const adbCmd = CreateAdbCmd( [ 'shell', 'getprop', property ], g:android_target_device )
+def GetProperty( device: string, property: string ): string
+    const adbCmd = CreateAdbCmd( [ 'shell', 'getprop', property ], device )
     return ExecuteSync( adbCmd )
         ->join()
         ->trim()
@@ -51,7 +51,7 @@ def GetDeviceInfo( serialID: string, properties: list<string> = [ 'sdk', 'versio
     var result = { 'device': serialID }
     for property in properties
         if has_key( android_properties, property )
-            result[ property ] = GetProperty( android_properties[ property ] )
+            result[ property ] = GetProperty( serialID, android_properties[ property ] )
         endif
     endfor
     return result
@@ -144,18 +144,14 @@ enddef
 # if there are multiple, bring up a menu
 # returns true on successful selection
 export def SelectDevice( device: string = '' ): bool
-    if empty(device)
-        if IsDeviceValid( g:android_target_device )
-            return true
-        endif
-    else
-        if IsDeviceValid( device )
+    if !empty(device)
+        const isValid = IsDeviceValid( device )
+        if isValid
             g:android_target_device = device
-            return true
         else
             echom printf("Device '%s' is not valid!", device )
-            return false
         endif
+        return isValid
     endif
 
     const allDevices = Devices( [ 'device', 'brand', 'manufacturer', 'model' ] )
