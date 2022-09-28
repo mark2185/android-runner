@@ -49,7 +49,6 @@ export def Setup( dir: string ): void
     g:gradle_project_root  = directory
     # TODO: validate
     g:gradle_bin           = g:gradle_project_root .. '/gradlew'
-    g:adb_bin              = $ANDROID_SDK->trim( '/', 2 ) ..  '/platform-tools/adb'
 enddef
 
 defcompile

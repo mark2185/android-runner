@@ -19,7 +19,11 @@ g:gradle_bin           = <arg> .. '/gradlew'
 After `:GradleSetup` the plugin checks every second for connected devices.
 If there is only one, it is selected as the target device.
 
-The default `adb binary` is `$ANDROID_SDK/platform-tools/adb`
+The default `adb` binary is searched for in:
+  - `$ANDROID_SDK/platform-tools/adb`
+  - `$(which adb)`
+
+An error message will pop up if it fails.
 If you wish to use some other `adb` binary, set `g:adb_bin` to it.
 
 ## Commands
@@ -85,7 +89,6 @@ def Setup( dir: string )
     g:android_project_root = dir
     g:gradle_project_root  = dir
     g:gradle_bin           = dir .. '/gradlew'
-    g:adb_bin              = $ANDROID_SDK .. '/platform-tools/adb'
 ```
 
 ### 2. Launch Vimspector
@@ -151,7 +154,7 @@ g:android_lldb_armv8_server_bin - path to the armv8 version of lldb-server
 g:android_lldb_armv7_server_bin - path to the armv7 version of lldb-server
 g:gradle_bin                    - path to gradlew
 g:gradle_project_root           - dirname of g:gradle_bin
-g:adb_bin                       - path to adb, defaults to $ANDROID_SDK/platform-tools/adb
+g:adb_bin                       - path to adb, defaults to `$ANDROID_SDK/platform-tools/adb` or `which adb`
 g:adb_port                      - port for adb to use, defaults to 5037
 g:gradle_flags                  - flags that are injected into gradle invocations, default to `-p`
 ```

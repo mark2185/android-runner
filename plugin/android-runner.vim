@@ -19,16 +19,23 @@ endif
 
 g:adb_port               = get( g:, 'adb_port', '5037'  )
 g:jdb_port               = get( g:, 'jdb_port', 54321 )
-# TODO: check if there is no adb
+
 g:adb_bin                = get( g:, 'adb_bin', '' )
 if empty( g:adb_bin )
-    const adb = systemlist( 'which adb' )->join()->trim()
-    if empty( adb )
-        echom "'adb' not found, please set `g:adb_bin` manually"
-    else
-        g:adb_bin = adb
+    const androidSDK = $ANDROID_SDK
+    if !empty( androidSDK )
+        g:adb_bin = androidSDK->trim( '/', 2 ) .. '/platform-tools/adb'
+    endif
+
+    if !executable( g:adb_bin )
+        if executable( 'which' ) && executable( 'adb' )
+            g:adb_bin = systemlist( 'which adb' )->join()->trim()
+        else
+            echon "'adb' not found, please set `g:adb_bin` manually"
+        endif
     endif
 endif
+
 g:adb_use_pidcat         = get( g:, 'adb_use_pidcat', 0 )
 g:android_target_device  = get( g:, 'android_target_device', '' )
 g:android_target_app     = get( g:, 'android_target_app',    '' )
