@@ -405,6 +405,14 @@ export def LaunchDebugger(): void
             job#AddToQueue( CreateAdbCmd( pushCmd, g:android_target_device ) )
         endif
 
+        # kill existing lldb-server process
+        job#AddToQueue( CreateAdbCmd( [
+            'shell',
+            'run-as',
+            'com.microblink.exerunner.' .. g:android_target_app,
+            'pkill', 'lldb-server', '|| true'
+            ] ) )
+
         # copy to root of app
         job#AddToQueue( CreateAdbCmd( [
             'shell',
