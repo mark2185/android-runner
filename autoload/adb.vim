@@ -465,7 +465,8 @@ export def InputText( ...args: list< string > ): void
         return
     endif
 
-    ExecuteSync( CreateAdbCmd( [ 'shell', 'input', 'text' ] + args, g:android_target_device ) )
+    const replacedSpace = args->join("%s")
+    ExecuteSync( CreateAdbCmd( [ 'shell', 'input', 'text', replacedSpace ], g:android_target_device ) )
 enddef
 
 defcompile
