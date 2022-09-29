@@ -81,8 +81,6 @@ But if you have more than one, please set the ID through `:AdbSelectDevice`.
 
 Run `:AdbDebugger`
 
-Run `jdb -attach localhost:54321` in a separate terminal. (I know, I know, I'll remove this step later)
-
 Note: if you want to preset the GradleSetup so you don't have to invoke it, this is GradleSetup in a nutshell:
 ```vim
 def Setup( dir: string )
@@ -98,40 +96,56 @@ Here's the config:
 ```json
 {
     "configurations": {
-        "AndroidTest": {
+        "Remote android debugging": {
+            "remote-request": "launch",
+            "adapter": {
+                "extends": "CodeLLDB",
+                "variables": {
+                    "AndroidApp": "com.package.application",
+                    "AndroidDevice": "<device-serial-here>",
+                    "ADBPort": "${ADBPort:5037}"
+                },
+                "launch": {
+                    "delay": "2000m", // if you get the "failed to get reply to handshake packet", you likely need a longer delay
+                    "remote": {
+                        "host": "localhost",
+                        "runCommands": [
+                            [ "jdb", "-attach", "localhost:54321" ],
+                            [
+                                "adb",
+                                "-P", "${ADBPort}",
+                                "-s", "${AndroidDevice}",
+                                "shell", "run-as", "${AndroidApp}",
+                                "./lldb-server", "platform", "--listen", "\"*:54321\""
+                            ]
+                        ]
+                    }
+                }
+            },
             "breakpoints": {
                 "exception": {
                     "cpp_catch": "N",
                     "cpp_throw": "N"
                 }
             },
-            "adapter": {
-                "extends": "CodeLLDB",
-                "launch": {
-                    "remote": {
-                        "host": "localhost",
-                        "runCommand": [
-                            "adb",
-                            "-P", "${adbPort:5037}",
-                            "-s", "${androidDevice}",
-                            "shell", "run-as",
-                            "com.microblink.exerunner.${AndroidAppName}",
-                            "./lldb-server",
-                            "platform",
-                            "--server",
-                            "--listen \"*:54321\""
-                        ]
-                    }
+            "variables": {
+                "pid": {
+                    "shell":  [
+                        "adb", "shell", "ps",
+                        "| grep \"${AndroidApp}\"",
+                        "| tr -s ' '",
+                        "| cut -d' ' -f2"
+                    ]
                 }
             },
             "configuration": {
+                "environment": {
+                    "ANDROID_ADB_SERVER_PORT": "${ADBPort}"
+                },
                 "initCommands": [
                     "platform select remote-android",
                     "platform connect connect://localhost:54321"
                 ],
-                "environment": {
-                    "ANDROID_ADB_SERVER_PORT": "${adbPort:5037}" // this is NECESSARY if the port is non-default (i.e. not 5037)
-                },
                 "pid": "${pid}",
                 "request": "attach"
             }
@@ -140,7 +154,7 @@ Here's the config:
 }
 ```
 
-Note: `${androidDevice}` and `${pid}` are in the `g:android_target_device` and `g:android_target_app_pid` variables so you can use `<C-R>=g:android_target_device<CR>` to insert it into the prompt.
+Note: the serial ID and the PID are in `g:android_target_device` and `g:android_target_app_pid` respectively, so you can use `<C-R>=g:<variable_name><CR>` to insert them wherever you need to.
 
 ## Configuration
 
