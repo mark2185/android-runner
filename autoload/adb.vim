@@ -102,7 +102,7 @@ export def SetPort( port: string )
 enddef
 
 export def GetPid( app_name: string = printf( "%s.%s", g:app_pkg, g:android_target_app ) ): number
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom "No devices found"
         return -1
     endif
@@ -129,7 +129,7 @@ export def GetPid( app_name: string = printf( "%s.%s", g:app_pkg, g:android_targ
 enddef
 
 export def Shell(): void
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom "No devices found"
         return
     endif
@@ -181,7 +181,7 @@ enddef
 
 # TODO: gradle should have :app:install{Debug,Release,Distribute}
 export def Install( src: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ) ): string
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom 'No devices found'
         return 'error installing'
     endif
@@ -191,7 +191,7 @@ enddef
 
 # TODO: gradle should have this
 export def InstallAsync( src: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ) ): void
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom 'No devices found'
         return
     endif
@@ -214,7 +214,7 @@ export def Push(
       dst: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ),
     ): void
 
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom 'No devices found'
         return
     endif
@@ -233,7 +233,7 @@ export def PushAsync(
       dst: string = printf( '/data/local/tmp/%s.%s', g:app_pkg, g:android_target_app ),
      ): void
 
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom 'No devices found'
         return
     endif
@@ -272,7 +272,7 @@ export def StartAsync(
      package_path:   string = 'com.microblink.exerunner',
      activity_class: string = 'com.microblink.exerunner.RunActivity' ): void
 
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom 'No devices found'
         return
     endif
@@ -295,7 +295,7 @@ enddef
 
 # TODO: in a separate buffer so it doesn't interefere with jobs
 export def GetLogcatOutput( app_name: string = 'com.microblink.exerunner.' .. g:android_target_app ): void
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom 'No devices found'
         return
     endif
@@ -327,7 +327,7 @@ export def Shazam(
         return
     endif
 
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom 'No devices found'
         return
     endif
@@ -383,7 +383,7 @@ export def LaunchDebugger(): void
         return
     endif
 
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom 'No devices found'
         return
     endif
@@ -460,7 +460,7 @@ export def Run( ...args: list< string > ): void
 enddef
 
 export def InputText( ...args: list< string > ): void
-    if !SelectDevice()
+    if !IsDeviceValid( g:android_target_device ) && !SelectDevice()
         echom 'No devices found'
         return
     endif
