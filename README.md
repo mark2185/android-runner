@@ -106,7 +106,7 @@ Here's the config:
                     "ADBPort": "${ADBPort:5037}"
                 },
                 "launch": {
-                    "delay": "2000m", // if you get the "failed to get reply to handshake packet", you likely need a longer delay
+                    "delay": "2000m",
                     "remote": {
                         "host": "localhost",
                         "runCommands": [
@@ -154,7 +154,13 @@ Here's the config:
 }
 ```
 
-Note: the serial ID and the PID are in `g:android_target_device` and `g:android_target_app_pid` respectively, so you can use `<C-R>=g:<variable_name><CR>` to insert them wherever you need to.
+### Notes
+
+If you get the "failed to get reply to handshake packet", you likely need a longer delay.
+
+Also, the serial ID and the PID are in `g:android_target_device` and `g:android_target_app_pid` respectively, so you can use `<C-R>=g:<variable_name><CR>` to insert them wherever you need to.
+
+If the `lldb-server` says that the address is already used, you can kill the server by either relaunching the app via `:AdbDebugger` or invoking `:call adb#StopLLDB()` directly.
 
 ## Configuration
 
