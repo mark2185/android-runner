@@ -397,13 +397,12 @@ export def LaunchDebugger(): void
         if v:shell_error || "No such file or directory" =~ lsOutput->get( 0, '' )
             # push necessary
             const abi = GetDeviceInfo( g:android_target_device, ['abi'] )['abi']
-            var android_lldb_server = ''
-            if abi == 'armeabi-v7a'
-                android_lldb_server = g:android_lldb_armv7_server_bin
-            else
-                android_lldb_server = g:android_lldb_armv8_server_bin
-            endif
-            job#AddToQueue( CreateAdbCmd( [ 'push', android_lldb_server, lldbServerDst ], g:android_target_device ) )
+            const android_lldb_servers = {
+                'armeabi-v7a': g:android_lldb_armv7_server_bin,
+                'arm64-v8a': g:android_lldb_armv8_server_bin,
+            }
+            const pushCmd = [ 'push', android_lldb_servers[abi], lldbServerDst ]
+            job#AddToQueue( CreateAdbCmd( pushCmd, g:android_target_device ) )
         endif
 
         # copy to root of app
@@ -425,10 +424,6 @@ export def LaunchDebugger(): void
         '-c', 'android.intent.category.LAUNCHER'
         ] ) )
 
-    # necessary for the app to start up
-    # TODO: don't guesstimate
-    job#AddToQueue( [ 'sleep', '4' ] )
-
     job#AddToQueue( CreateAdbCmd( [
         'forward',
         'tcp:' .. string(g:jdb_port),
@@ -439,7 +434,7 @@ export def LaunchDebugger(): void
     job#ProcessQueue()
 enddef
 
-export def StopLLDB( target_device: any = g:android_target_device )
+export def StopLLDB()
     var cmd = CreateAdbCmd( [
         'shell',
         'run-as',
@@ -448,17 +443,7 @@ export def StopLLDB( target_device: any = g:android_target_device )
         'lldb-server'
     ], g:android_target_device )
 
-    cgetexpr ExecuteSync( cmd )->join("\n")
-
-    cmd = [
-        'pkill',
-        'jdb'
-    ]
-
-    botright cexpr ExecuteSync( cmd )->join("\n")
-
-    sleep 2
-    if v:shell_error | echom "Shell error!" | botright copen | return | endif
+    ExecuteSync( cmd )
 enddef
 
 export def RunAsync( ...args: list< string > ): void
