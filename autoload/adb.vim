@@ -84,6 +84,8 @@ export def Restart(): void
 enddef
 
 export def Devices( properties: list< string > = [] ): list< dict< string > >
+    #TODO: adb: failed to check server version: protocol fault (couldn't read
+    #status): Connection reset by peer
     const devices = ExecuteSync( CreateAdbCmd( [ 'devices' ] ) )
             ->filter( '!empty( v:val )' )                      # remove empty lines
             ->filter( 'v:val[0] != "*"' )                      # e.g. "* daemon starting"
@@ -393,9 +395,9 @@ export def LaunchDebugger(): void
     else
         const lldbServerDst = '/data/local/tmp/lldb-server'
 
-        const lsOutput = ExecuteSync( CreateAdbCmd( [ 'shell', 'ls', lldbServerDst ], g:android_target_device ) )
-        if v:shell_error || "No such file or directory" =~ lsOutput->get( 0, '' )
-            # push necessary
+        # const lsOutput = ExecuteSync( CreateAdbCmd( [ 'shell', 'ls', lldbServerDst ], g:android_target_device ) )
+        # if v:shell_error || "No such file or directory" =~ lsOutput->get( 0, '' )
+            # either always push, or check is it 32b or 64b lldb-server
             const abi = GetDeviceInfo( g:android_target_device, ['abi'] )['abi']
             const android_lldb_servers = {
                 'armeabi-v7a': g:android_lldb_armv7_server_bin,
@@ -403,7 +405,7 @@ export def LaunchDebugger(): void
             }
             const pushCmd = [ 'push', android_lldb_servers[abi], lldbServerDst ]
             job#AddToQueue( CreateAdbCmd( pushCmd, g:android_target_device ) )
-        endif
+        # endif
 
         # kill existing lldb-server process
         job#AddToQueue( CreateAdbCmd( [

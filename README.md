@@ -79,7 +79,9 @@ Set `g:android_target_app` to the final app name, e.g. `CoreUtilsTest`.
 If you have only one android device connected, it'll be used for running the `adb` commands.
 But if you have more than one, please set the ID through `:AdbSelectDevice`.
 
-Run `:AdbDebugger`
+Run `:AdbShazam` to install and launch the application.
+
+Run `:AdbDebugger` to launch the application in `debug` mode. (the app needs to be installed first)
 
 Note: if you want to preset the GradleSetup so you don't have to invoke it, this is GradleSetup in a nutshell:
 ```vim
