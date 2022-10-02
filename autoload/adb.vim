@@ -119,7 +119,7 @@ export def GetPid( app_name: string = printf( "%s.%s", g:app_pkg, g:android_targ
     # poor man's version
     const cmd = [
         'shell', 'ps',
-        printf('| egrep "\b%s\b"', app_name),
+        printf('| grep "%s"', app_name),
         "| tr -s ' '",
         "| cut -d' ' -f2",
     ]
