@@ -16,9 +16,6 @@ g:gradle_project_root  = <arg>
 g:gradle_bin           = <arg> .. '/gradlew'
 ```
 
-After `:GradleSetup` the plugin checks every second for connected devices.
-If there is only one, it is selected as the target device.
-
 The default `adb` binary is searched for in:
   - `$ANDROID_SDK/platform-tools/adb`
   - `$(which adb)`
