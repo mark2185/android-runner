@@ -432,7 +432,7 @@ export def LaunchDebugger(): void
         printf( 'com.microblink.exerunner.%s/com.microblink.exerunner.RunActivity', g:android_target_app ),
         '-a', 'android.intent.action.MAIN',
         '-c', 'android.intent.category.LAUNCHER'
-        ] ) )
+        ], g:android_target_device ) )
 
     job#AddToQueue( CreateAdbCmd( [
         'forward',
