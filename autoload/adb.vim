@@ -351,7 +351,7 @@ export def Shazam(
         printf( '%s.%s/%s.%s', package_path, app_name, package_path, activity_class ),
         '-a', 'android.intent.action.MAIN',
         '-c', 'android.intent.category.LAUNCHER'
-        ] ) )
+        ], g:android_target_device ) )
 
     job#ProcessQueue()
 enddef
@@ -413,7 +413,7 @@ export def LaunchDebugger(): void
             'run-as',
             'com.microblink.exerunner.' .. g:android_target_app,
             'pkill', 'lldb-server', '|| true'
-            ] ) )
+            ], g:android_target_device ) )
 
         # copy to root of app
         job#AddToQueue( CreateAdbCmd( [
