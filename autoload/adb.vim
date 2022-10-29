@@ -226,7 +226,7 @@ export def Push(
         return
     endif
 
-    silent cexpr ExecuteSync( CreateAdbCmd( [ 'push', src, dst ], g:android_target_device ) )->join("\n")
+    silent cexpr ExecuteSync( CreateAdbCmd( [ 'push', '--sync', '-z', 'any', src, dst ], g:android_target_device ) )->join("\n")
     botright copen
 enddef
 
@@ -245,7 +245,7 @@ export def PushAsync(
         return
     endif
 
-    call job#Run( CreateAdbCmd( [ 'push', src, dst ], g:android_target_device ) )
+    call job#Run( CreateAdbCmd( [ 'push', '--sync', '-z', 'any', src, dst ], g:android_target_device ) )
 enddef
 
 export def Start(
@@ -338,7 +338,7 @@ export def Shazam(
     const src = printf( '%s/app/build/outputs/apk/%s/app-%s.apk', g:android_project_root, build_type_name, build_type_name )
     const dst = printf( '/data/local/tmp/%s.%s', g:app_pkg, app_name )
 
-    job#AddToQueue( CreateAdbCmd( [ 'push', src, dst ], g:android_target_device ) )
+    job#AddToQueue( CreateAdbCmd( [ 'push', '--sync', '-z', 'any', src, dst ], g:android_target_device ) )
 
     # install
     const app_apk = printf( '/data/local/tmp/%s.%s', g:app_pkg, app_name )
@@ -397,13 +397,13 @@ export def LaunchDebugger(): void
 
         # const lsOutput = ExecuteSync( CreateAdbCmd( [ 'shell', 'ls', lldbServerDst ], g:android_target_device ) )
         # if v:shell_error || "No such file or directory" =~ lsOutput->get( 0, '' )
-            # either always push, or check is it 32b or 64b lldb-server
+            # TODO: either always push, or check is it 32b or 64b lldb-server
             const abi = GetDeviceInfo( g:android_target_device, ['abi'] )['abi']
             const android_lldb_servers = {
                 'armeabi-v7a': g:android_lldb_armv7_server_bin,
                 'arm64-v8a': g:android_lldb_armv8_server_bin,
             }
-            const pushCmd = [ 'push', android_lldb_servers[abi], lldbServerDst ]
+            const pushCmd = [ 'push', '-z', 'any', android_lldb_servers[abi], lldbServerDst ]
             job#AddToQueue( CreateAdbCmd( pushCmd, g:android_target_device ) )
         # endif
 
