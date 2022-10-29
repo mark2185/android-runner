@@ -99,23 +99,31 @@ Here's the config:
             "remote-request": "launch",
             "adapter": {
                 "extends": "CodeLLDB",
+                "command": [
+                    "${gadgetDir}/CodeLLDB/adapter/codelldb",
+                    "--liblldb", "/usr/local/lib/liblldb.so.15.0.3",
+                    "--port", "${unusedLocalPort}"
+                ],
                 "variables": {
-                    "AndroidApp": "com.package.application",
-                    "AndroidDevice": "<device-serial-here>",
-                    "ADBPort": "${ADBPort:5037}"
+                    "ANDROID_APP"                     : "com.package.application", // edit this
+                    "ANDROID_SERIAL"                  : "<device-serial-id>",      // edit this
+                    "ANDROID_ADB_SERVER_PORT"         : "5037", // edit this if needed
+                    "ANDROID_PLATFORM_LISTEN_PORT"    : "6666",
+                    "ANDROID_PLATFORM_LOCAL_PORT"     : "6666",
+                    "ANDROID_PLATFORM_LOCAL_GDB_PORT" : "8888"
                 },
                 "launch": {
-                    "delay": "2000m",
+                    "delay": "3000m",
                     "remote": {
-                        "host": "localhost",
                         "runCommands": [
-                            [ "jdb", "-attach", "localhost:54321" ],
+                            [ "jdb", "-attach", "localhost:54321" ], // this port is hardcoded
                             [
                                 "adb",
-                                "-P", "${ADBPort}",
-                                "-s", "${AndroidDevice}",
-                                "shell", "run-as", "${AndroidApp}",
-                                "./lldb-server", "platform", "--listen", "\"*:54321\""
+                                "-P", "${ANDROID_ADB_SERVER_PORT}",
+                                "-s", "${ANDROID_SERIAL}",
+                                "shell", "run-as", "${ANDROID_APP}",
+                                "./lldb-server", "platform",
+                                "--listen", "\"*:${ANDROID_PLATFORM_LISTEN_PORT}\""
                             ]
                         ]
                     }
@@ -130,20 +138,23 @@ Here's the config:
             "variables": {
                 "pid": {
                     "shell":  [
-                        "adb", "shell", "ps",
-                        "| grep \"${AndroidApp}\"",
+                        "adb",
+                        "-P", "${ANDROID_ADB_SERVER_PORT}",
+                        "-s", "${ANDROID_SERIAL}",
+                        "shell", "ps",
+                        "| grep \"${ANDROID_APP}\"",
                         "| tr -s ' '",
                         "| cut -d' ' -f2"
                     ]
                 }
             },
             "configuration": {
-                "environment": {
-                    "ANDROID_ADB_SERVER_PORT": "${ADBPort}"
-                },
                 "initCommands": [
+                    "script os.environ['ANDROID_PLATFORM_LOCAL_PORT'    ] = '${ANDROID_PLATFORM_LOCAL_PORT}'",
+                    "script os.environ['ANDROID_PLATFORM_LOCAL_GDB_PORT'] = '${ANDROID_PLATFORM_LOCAL_GDB_PORT}'",
+                    "script os.environ['ANDROID_ADB_SERVER_PORT'        ] = '${ANDROID_ADB_SERVER_PORT}'",
                     "platform select remote-android",
-                    "platform connect connect://localhost:54321"
+                    "platform connect connect://localhost:${ANDROID_PLATFORM_LISTEN_PORT}"
                 ],
                 "pid": "${pid}",
                 "request": "attach"
@@ -156,8 +167,6 @@ Here's the config:
 ### Notes
 
 If you get the "failed to get reply to handshake packet", you likely need a longer delay.
-
-Also, the serial ID and the PID are in `g:android_target_device` and `g:android_target_app_pid` respectively, so you can use `<C-R>=g:<variable_name><CR>` to insert them wherever you need to.
 
 If the `lldb-server` says that the address is already used, you can kill the server by either relaunching the app via `:AdbDebugger` or invoking `:call adb#StopLLDB()` directly.
 
