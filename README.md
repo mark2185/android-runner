@@ -101,7 +101,7 @@ Here's the config:
                 "extends": "CodeLLDB",
                 "command": [
                     "${gadgetDir}/CodeLLDB/adapter/codelldb",
-                    "--liblldb", "/usr/local/lib/liblldb.so.15.0.3",
+                    "--liblldb", "/usr/local/lib/liblldb.so",
                     "--port", "${unusedLocalPort}"
                 ],
                 "variables": {
